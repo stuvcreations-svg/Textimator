@@ -27,15 +27,21 @@ const DEFAULT_STATE = {
   total_price: null,
   timeline: null,
   payment_terms: null,
-  warranty_options: null
+  warranty_options: null,
+  roof_pictures: null
 };
 
-const SYSTEM_INSTRUCTION = `
-You are an expert AI estimating assistant. You are chatting with a roofing contractor who is currently in the field. Your job is to gather the details of their inspection to generate a final proposal for their customer.
+// Dynamic System Instruction to inject the contractor's name
+const getSystemInstruction = (contractorName) => `
+You are an expert AI estimating assistant. You are chatting with a roofing contractor named ${contractorName} who is currently in the field.
 
-Keep your tone natural, helpful, and concise—like a human colleague texting them back. 
+Keep your tone natural and helpful. ADAPT to their conversational style and always address them by name appropriately. 
 
-Your goal is to collect these 12 pieces of information:
+LANGUAGE RULE (CRITICAL):
+- If ${contractorName} speaks to you in Spanish, you MUST reply to them in Spanish. 
+- However, ALL data you extract into the "collected_data" JSON MUST be translated into professional English for the final report.
+
+Your goal is to collect these 13 pieces of information:
 1. customer_name_and_address: Customer's name and property address.
 2. building_stories: Single-story or multi-story.
 3. scope_of_work: Localized repair or full roof replacement.
@@ -48,18 +54,18 @@ Your goal is to collect these 12 pieces of information:
 10. timeline: Estimated start date or lead time for the build.
 11. payment_terms: Payment terms (e.g., 50% deposit, financing).
 12. warranty_options: Workmanship or manufacturer warranty offered.
+13. roof_pictures: Ask if they have any pictures of the roof to add to the file.
 
 CONVERSATION RULES:
 - Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
-- Extract any details the contractor provides into "collected_data". 
-- Ask conversational follow-up questions to gather the missing fields. You can ask for 1 or 2 related things at a time (e.g., "Got it. Is this a single-story home, and what's the total price you want to quote?").
+- Extract any details they provide into "collected_data". 
+- HANDLING CORRECTIONS: If ${contractorName} corrects a previous detail or changes their mind (e.g., "Wait, change the price to $20k" or "I meant metal roof, not shingle"), output the new value in "collected_data" to overwrite the old one, and briefly acknowledge the update in your reply.
+- Ask conversational follow-up questions to gather the missing fields (1 or 2 at a time).
 
-THE "SOFT-SKIP" LOGIC (CRITICAL):
-- If the contractor seems finished providing information, OR if they explicitly ask you to generate the quote, check if any of the 12 fields are still null.
-- If fields are missing, DO NOT block them. Instead, politely list what is missing and ask if they want to proceed. 
-  Example: "I have almost everything! We are just missing the site notes and the payment terms. Do you want to add those, or should I go ahead and build the report without them?"
-- If the contractor says to proceed without the missing info (e.g., "skip it", "build it anyway", "that's all"), update the missing null fields in "collected_data" to the exact string "skipped", and set "is_complete": true.
-- If all 12 fields are filled with either data or "skipped", set "is_complete": true.
+THE "SOFT-SKIP" LOGIC:
+- If they seem finished or ask you to build the quote, check if any of the 13 fields are still null.
+- If fields are missing, politely list what is missing and ask if they want to proceed without them. 
+- If they say to proceed/skip, update the missing null fields in "collected_data" to "skipped", and set "is_complete": true.
 `;
 
 app.get('/', (req, res) => {
@@ -79,15 +85,20 @@ app.post('/', async (req, res) => {
 
   const value = req.body.entry?.[0]?.changes?.[0]?.value || req.body.value;
   const message = value?.messages?.[0];
+  const contacts = value?.contacts?.[0];
+  
+  // Extract their WhatsApp Profile name automatically
+  const senderProfileName = contacts?.profile?.name || 'Contractor';
 
   if (!message || message.type !== 'text') return;
 
   const senderPhone = message.from;
   const incomingText = message.text.body;
-  console.log(`💬 Message from ${senderPhone}: ${incomingText}`);
+  console.log(`💬 Message from ${senderProfileName} (${senderPhone}): ${incomingText}`);
 
   if (!userSessions.has(senderPhone)) {
     userSessions.set(senderPhone, {
+      contractorName: senderProfileName,
       data: { ...DEFAULT_STATE },
       isComplete: false
     });
@@ -96,7 +107,7 @@ app.post('/', async (req, res) => {
   const session = userSessions.get(senderPhone);
 
   if (session.isComplete) {
-    await sendWhatsAppMessage(senderPhone, "Your estimate has already been generated! An estimator will follow up with you shortly.");
+    await sendWhatsAppMessage(senderPhone, `Tu estimación ya fue generada, ${session.contractorName}. / Your estimate is already generated!`);
     return;
   }
 
@@ -106,13 +117,12 @@ app.post('/', async (req, res) => {
     let attempt = 0;
     const maxAttempts = 3;
 
-    // Automatic Retry Loop for 503 Traffic Spikes
     while (attempt < maxAttempts) {
       const geminiResponse = await fetch(geminiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+          system_instruction: { parts: [{ text: getSystemInstruction(session.contractorName) }] },
           contents: [
             {
               role: 'user',
@@ -130,17 +140,17 @@ app.post('/', async (req, res) => {
 
       if (geminiData.error && geminiData.error.code === 503) {
         attempt++;
-        console.log(`⚠️ Gemini 503 Demand Spike. Retrying in 2s... (Attempt ${attempt}/${maxAttempts})`);
+        console.log(`⚠️ Gemini 503 Demand Spike. Retrying...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
       } else {
-        break; // Success or different error, exit loop
+        break;
       }
     }
 
     const rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!rawAiOutput) {
-      console.error("❌ Gemini returned empty output or failed after retries", geminiData);
+      console.error("❌ Gemini returned empty output");
       return;
     }
 
@@ -148,12 +158,8 @@ app.post('/', async (req, res) => {
     session.data = { ...session.data, ...parsed.collected_data };
     session.isComplete = Boolean(parsed.is_complete);
 
-    console.log("🤖 Gemini Next Question:", parsed.customer_reply);
-
     if (session.isComplete) {
       const quoteNumber = `Q-${Math.floor(100000 + Math.random() * 900000)}`;
-
-      // Helper function to handle missing/skipped data cleanly
       const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
 
       const fullQuoteData = {
@@ -161,7 +167,6 @@ app.post('/', async (req, res) => {
         quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         quote_valid_until: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         
-        // Mapped from the 12 AI fields
         customer_name_and_address: formatField(session.data.customer_name_and_address, 'Client Details Pending'),
         building_stories: formatField(session.data.building_stories, 'Not specified'),
         scope_of_work: formatField(session.data.scope_of_work, 'Pending evaluation'),
@@ -173,7 +178,8 @@ app.post('/', async (req, res) => {
         total_price: formatField(session.data.total_price, 'TBD after physical inspection'),
         timeline: formatField(session.data.timeline, 'TBD'),
         payment_terms: formatField(session.data.payment_terms, 'Standard terms apply'),
-        warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty')
+        warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty'),
+        roof_pictures: formatField(session.data.roof_pictures, 'No photos logged') // 13th field mapped
       };
 
       const companyDefaults = {
@@ -185,11 +191,9 @@ app.post('/', async (req, res) => {
       };
 
       const merged = { ...companyDefaults, ...fullQuoteData };
-
       const templatePath = path.join(__dirname, 'roof-quote-template.html');
       const rawTemplate = fs.readFileSync(templatePath, 'utf8');
       
-      // Replaces the {{placeholders}} with our merged data
       const finalHtml = rawTemplate.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
 
       const publicDir = path.join(__dirname, 'public');
@@ -201,7 +205,7 @@ app.post('/', async (req, res) => {
       const host = req.get('host');
       const fileUrl = `https://${host}/files/${fileName}`;
 
-      await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready to review:\n${fileUrl}`);
+      await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready:\n${fileUrl}`);
       await sendWhatsAppDocument(senderPhone, fileUrl, fileName, `Estimate Proposal ${quoteNumber}`);
       return;
     }
@@ -215,13 +219,11 @@ app.post('/', async (req, res) => {
 
 async function sendWhatsAppMessage(to, text) {
   try {
-    const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
+    await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text', text: { body: text } })
     });
-    const result = await response.json();
-    if (result.error) console.error('❌ Meta API Error (Text):', result.error);
   } catch (err) {
     console.error('❌ WhatsApp text error:', err);
   }
@@ -229,7 +231,7 @@ async function sendWhatsAppMessage(to, text) {
 
 async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
   try {
-    const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
+    await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -240,8 +242,6 @@ async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
         document: { link: fileUrl, filename: fileName, caption }
       })
     });
-    const result = await response.json();
-    if (result.error) console.error('❌ Meta API Error (Doc):', result.error);
   } catch (err) {
     console.error('❌ WhatsApp doc error:', err);
   }
