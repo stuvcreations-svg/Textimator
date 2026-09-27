@@ -104,8 +104,6 @@ app.get('/', (req, res) => {
 });
 
 app.post('/', async (req, res) => {
-  // We added this console.log so you can actually see the payload arriving in Render
-  console.log("📥 INCOMING WEBHOOK:", JSON.stringify(req.body, null, 2));
   res.status(200).send('EVENT_RECEIVED');
 
   const value = req.body.entry?.[0]?.changes?.[0]?.value || req.body.value;
@@ -132,31 +130,46 @@ app.post('/', async (req, res) => {
   }
 
   try {
-const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiApiKey}`;
-    
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: JSON.stringify({ current_state: session.data, incoming_message: incomingText }) }]
-          }
-        ],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          temperature: 0.1
-        }
-      })
-    });
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiApiKey}`;
+    let geminiData = null;
+    let attempt = 0;
+    const maxAttempts = 3;
 
-    const geminiData = await geminiResponse.json();
+    // Automatic Retry Loop for 503 Traffic Spikes
+    while (attempt < maxAttempts) {
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: JSON.stringify({ current_state: session.data, incoming_message: incomingText }) }]
+            }
+          ],
+          generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1
+          }
+        })
+      });
+
+      geminiData = await geminiResponse.json();
+
+      if (geminiData.error && geminiData.error.code === 503) {
+        attempt++;
+        console.log(`⚠️ Gemini 503 Demand Spike. Retrying in 2s... (Attempt ${attempt}/${maxAttempts})`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        break; // Success or different error, exit loop
+      }
+    }
+
     const rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!rawAiOutput) {
-      console.error("❌ Gemini returned empty output", geminiData);
+      console.error("❌ Gemini returned empty output or failed after retries", geminiData);
       return;
     }
 
@@ -225,7 +238,6 @@ const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemin
   }
 });
 
-// Updated to v26.0 to match your Meta Dashboard
 async function sendWhatsAppMessage(to, text) {
   try {
     const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
@@ -240,7 +252,6 @@ async function sendWhatsAppMessage(to, text) {
   }
 }
 
-// Updated to v26.0
 async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
   try {
     const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
