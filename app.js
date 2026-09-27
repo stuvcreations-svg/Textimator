@@ -322,4 +322,66 @@ app.get('/test-quote', async (req, res) => {
   }
 });
 
+// Test endpoint: Direct Gemini intake evaluation in browser
+app.get('/test-intake', async (req, res) => {
+  const incomingText = req.query.msg || "Hi, I need an estimate. Address is 310 SW 25th Terrace Cape Coral. Full tear-off, 2400 sqft, asphalt shingle to standing seam metal. 1 story, minor wind uplift, cash retail, timeline 3 weeks. Contact is Juan Londono, juan@test.com";
+  const dummyPhone = "test-browser-user";
+
+  if (!userSessions.has(dummyPhone)) {
+    userSessions.set(dummyPhone, {
+      data: { ...DEFAULT_STATE },
+      isComplete: false
+    });
+  }
+
+  const session = userSessions.get(dummyPhone);
+
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+
+    const geminiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: JSON.stringify({ current_state: session.data, incoming_message: incomingText }) }]
+          }
+        ],
+        generationConfig: {
+          response_mime_type: 'application/json',
+          temperature: 0.1
+        }
+      })
+    });
+
+    const geminiData = await geminiResponse.json();
+
+    if (geminiData.error) {
+      return res.status(500).json({ status: "gemini_api_error", details: geminiData.error });
+    }
+
+    const rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawAiOutput) {
+      return res.status(500).json({ status: "empty_ai_output", raw: geminiData });
+    }
+
+    const parsed = JSON.parse(rawAiOutput);
+    session.data = { ...session.data, ...parsed.collected_data };
+    session.isComplete = Boolean(parsed.is_complete);
+
+    res.json({
+      status: "success",
+      input_message: incomingText,
+      extracted_data: session.data,
+      is_complete: session.isComplete,
+      ai_response: parsed.reply_to_user || parsed.next_question || parsed
+    });
+  } catch (error) {
+    res.status(500).json({ status: "server_error", message: error.message, stack: error.stack });
+  }
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
