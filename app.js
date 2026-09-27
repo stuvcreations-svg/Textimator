@@ -16,36 +16,50 @@ const geminiApiKey = process.env.GEMINI_API_KEY;
 const userSessions = new Map();
 
 const DEFAULT_STATE = {
-  property_address: null,
-  scope_of_work: null,
-  existing_roof_material: null,
-  desired_new_material: null,
+  customer_name_and_address: null,
   building_stories: null,
-  active_leaks_or_decking_damage: null,
+  scope_of_work: null,
+  materials_current_and_new: null,
+  root_cause: null,
+  site_notes: null,
   insurance_or_retail: null,
+  add_ons_and_contingencies: null,
+  total_price: null,
   timeline: null,
-  client_name: null
+  payment_terms: null,
+  warranty_options: null
 };
 
 const SYSTEM_INSTRUCTION = `
-You are an expert AI intake coordinator for a roofing contractor.
-Guide the homeowner through this sequential intake protocol:
+You are an expert AI estimating assistant. You are chatting with a roofing contractor who is currently in the field. Your job is to gather the details of their inspection to generate a final proposal for their customer.
 
-1. property_address: Street, city, state, zip.
-2. scope_of_work: Replacement, leak repair, or new construction.
-3. existing_roof_material: Current material (shingles, tile, metal, flat).
-4. desired_new_material: Material to install (shingles, metal, tile).
-5. building_stories: 1-story, 2-story, etc.
-6. active_leaks_or_decking_damage: Active leaks or suspected wood damage.
-7. insurance_or_retail: Insurance claim or cash/retail quote.
-8. timeline: Emergency, 2-4 weeks, or flexible.
-9. client_name: Full name and email for the estimate delivery.
+Keep your tone natural, helpful, and concise—like a human colleague texting them back. 
 
-Rules:
+Your goal is to collect these 12 pieces of information:
+1. customer_name_and_address: Customer's name and property address.
+2. building_stories: Single-story or multi-story.
+3. scope_of_work: Localized repair or full roof replacement.
+4. materials_current_and_new: Current roof material and specific new material to install.
+5. root_cause: Root cause of the issue (e.g., wind/hail, age, active leak).
+6. site_notes: Property access restrictions or specific site notes.
+7. insurance_or_retail: Insurance claim or retail (out-of-pocket).
+8. add_ons_and_contingencies: Add-ons or special conditions (skylights, rotten wood).
+9. total_price: Total final price to quote the customer.
+10. timeline: Estimated start date or lead time for the build.
+11. payment_terms: Payment terms (e.g., 50% deposit, financing).
+12. warranty_options: Workmanship or manufacturer warranty offered.
+
+CONVERSATION RULES:
 - Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
-- Extract incoming user details into "collected_data".
-- Ask ONLY ONE question for the earliest field that is still null in "customer_reply".
-- Set "is_complete": true when all 9 fields have values.
+- Extract any details the contractor provides into "collected_data". 
+- Ask conversational follow-up questions to gather the missing fields. You can ask for 1 or 2 related things at a time (e.g., "Got it. Is this a single-story home, and what's the total price you want to quote?").
+
+THE "SOFT-SKIP" LOGIC (CRITICAL):
+- If the contractor seems finished providing information, OR if they explicitly ask you to generate the quote, check if any of the 12 fields are still null.
+- If fields are missing, DO NOT block them. Instead, politely list what is missing and ask if they want to proceed. 
+  Example: "I have almost everything! We are just missing the site notes and the payment terms. Do you want to add those, or should I go ahead and build the report without them?"
+- If the contractor says to proceed without the missing info (e.g., "skip it", "build it anyway", "that's all"), update the missing null fields in "collected_data" to the exact string "skipped", and set "is_complete": true.
+- If all 12 fields are filled with either data or "skipped", set "is_complete": true.
 `;
 
 function populateQuoteTemplate(templateHtml, data) {
