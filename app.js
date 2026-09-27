@@ -265,4 +265,61 @@ async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
   }
 }
 
+// Test endpoint: Triggers quote generation directly via browser or curl
+app.get('/test-quote', async (req, res) => {
+  try {
+    const quoteNumber = `Q-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const testQuoteData = {
+      quote_number: quoteNumber,
+      quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      quote_valid_until: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      customer_name: req.query.name || "Jane Doe",
+      customer_phone: req.query.phone || "(555) 019-2834",
+      customer_email: req.query.email || "jane@example.com",
+      property_address: req.query.address || "124 Pine Island Rd, Cape Coral, FL",
+      roof_type: "Standing Seam Metal",
+      roof_age: "18 years",
+      roof_size_sqft: "2,600",
+      stories: "1 story",
+      diagnosis_summary: "Multiple compromised fastener gaskets, moderate wind uplift along the south ridge, and surface corrosion around vent penetrations.",
+      subtotal: "$14,800.00",
+      tax: "$962.00",
+      total: "$15,762.00",
+      deposit_amount: "$2,500.00",
+      estimated_start_date: "Within 2 weeks",
+      estimated_duration: "3 business days",
+      scope: [
+        { title: "Tear-off & Deck Fastener Check", detail: "Remove existing surface material, inspect 5/8-inch plywood decking, and replace damaged sections." },
+        { title: "High-Temp Underlayment", detail: "Install full self-adhering synthetic secondary water barrier across all valleys and eaves." },
+        { title: "24-Gauge Metal Installation", detail: "Fasten standing seam panels with concealed clips and install color-matched ridge ventilation." }
+      ],
+      materials: [
+        { material_name: "24-Gauge Galvalume Standing Seam Panels", material_qty: "28 sq", material_unit_price: "$320.00", material_line_total: "$8,960.00" },
+        { material_name: "Self-Adhering High-Temp Underlayment", material_qty: "7 rolls", material_unit_price: "$145.00", material_line_total: "$1,015.00" },
+        { material_name: "Tear-off, Disposal & Installation Labor", material_qty: "1 job", material_unit_price: "$4,825.00", material_line_total: "$4,825.00" }
+      ]
+    };
+
+    const templatePath = path.join(__dirname, 'roof-quote-template.html');
+    const rawTemplate = fs.readFileSync(templatePath, 'utf8');
+    const filledHtml = populateQuoteTemplate(rawTemplate, testQuoteData);
+
+    const publicDir = path.join(__dirname, 'public');
+    if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+
+    const fileName = `Roof_Quote_${quoteNumber}.html`;
+    fs.writeFileSync(path.join(publicDir, fileName), filledHtml, 'utf8');
+
+    const fileUrl = `https://${req.get('host')}/files/${fileName}`;
+    res.json({
+      status: "success",
+      quote_number: quoteNumber,
+      file_url: fileUrl
+    });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+});
+
 app.listen(port, () => console.log(`Server running on port ${port}`));
