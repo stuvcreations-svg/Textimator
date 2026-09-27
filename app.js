@@ -5,7 +5,6 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 
-// Expose the public folder so WhatsApp and browsers can view files
 app.use('/files', express.static(path.join(__dirname, 'public')));
 
 const port = process.env.PORT || 3000;
@@ -49,11 +48,9 @@ Rules:
 - Set "is_complete": true when all 9 fields have values.
 `;
 
-// Helper: Injects collected data and expands repeating blocks in the template
 function populateQuoteTemplate(templateHtml, data) {
   let html = templateHtml;
 
-  // Expand Scope repeating block
   const scopeRegex = /<!-- REPEAT:scope -->([\s\S]*?)<!-- END:scope -->/;
   const scopeMatch = html.match(scopeRegex);
   if (scopeMatch && Array.isArray(data.scope)) {
@@ -64,7 +61,6 @@ function populateQuoteTemplate(templateHtml, data) {
     html = html.replace(scopeRegex, expanded);
   }
 
-  // Expand Materials repeating block
   const matRegex = /<!-- REPEAT:materials -->([\s\S]*?)<!-- END:materials -->/;
   const matMatch = html.match(matRegex);
   if (matMatch && Array.isArray(data.materials)) {
@@ -78,10 +74,8 @@ function populateQuoteTemplate(templateHtml, data) {
     html = html.replace(matRegex, expanded);
   }
 
-  // Clean empty repeating blocks
   html = html.replace(/<!-- REPEAT:spots -->[\s\S]*?<!-- END:spots -->/g, '');
 
-  // Static company brand info
   const companyDefaults = {
     company_name: "Apex Elite Roofing",
     company_tagline: "Precision Roofing & Storm Restoration",
@@ -94,12 +88,9 @@ function populateQuoteTemplate(templateHtml, data) {
   };
 
   const merged = { ...companyDefaults, ...data };
-
-  // Replace remaining single placeholders
   return html.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
 }
 
-// Meta Webhook Verification (GET)
 app.get('/', (req, res) => {
   const mode = req.query['hub.mode'];
   const challenge = req.query['hub.challenge'];
@@ -112,8 +103,9 @@ app.get('/', (req, res) => {
   }
 });
 
-// Incoming WhatsApp Handler (POST)
 app.post('/', async (req, res) => {
+  // We added this console.log so you can actually see the payload arriving in Render
+  console.log("📥 INCOMING WEBHOOK:", JSON.stringify(req.body, null, 2));
   res.status(200).send('EVENT_RECEIVED');
 
   const value = req.body.entry?.[0]?.changes?.[0]?.value || req.body.value;
@@ -123,6 +115,7 @@ app.post('/', async (req, res) => {
 
   const senderPhone = message.from;
   const incomingText = message.text.body;
+  console.log(`💬 Message from ${senderPhone}: ${incomingText}`);
 
   if (!userSessions.has(senderPhone)) {
     userSessions.set(senderPhone, {
@@ -139,7 +132,7 @@ app.post('/', async (req, res) => {
   }
 
   try {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiApiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-pro:generateContent?key=${geminiApiKey}`;
 
     const geminiResponse = await fetch(geminiUrl, {
       method: 'POST',
@@ -161,17 +154,21 @@ app.post('/', async (req, res) => {
 
     const geminiData = await geminiResponse.json();
     const rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawAiOutput) return;
+    
+    if (!rawAiOutput) {
+      console.error("❌ Gemini returned empty output", geminiData);
+      return;
+    }
 
     const parsed = JSON.parse(rawAiOutput);
     session.data = { ...session.data, ...parsed.collected_data };
     session.isComplete = Boolean(parsed.is_complete);
 
-    // Intake complete -> Generate the custom quote file from the template
+    console.log("🤖 Gemini Next Question:", parsed.customer_reply);
+
     if (session.isComplete) {
       const quoteNumber = `Q-${Math.floor(100000 + Math.random() * 900000)}`;
 
-      // Prepare data for template
       const fullQuoteData = {
         quote_number: quoteNumber,
         quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -203,53 +200,50 @@ app.post('/', async (req, res) => {
         ]
       };
 
-      // Read template from root
       const templatePath = path.join(__dirname, 'roof-quote-template.html');
       const rawTemplate = fs.readFileSync(templatePath, 'utf8');
-
-      // Hydrate placeholders
       const finalHtml = populateQuoteTemplate(rawTemplate, fullQuoteData);
 
-      // Ensure /public exists and write file
       const publicDir = path.join(__dirname, 'public');
       if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
 
       const fileName = `Roof_Quote_${quoteNumber}.html`;
       fs.writeFileSync(path.join(publicDir, fileName), finalHtml, 'utf8');
 
-      // Build the public URL using the Render host
       const host = req.get('host');
       const fileUrl = `https://${host}/files/${fileName}`;
 
-      // Send to WhatsApp: Text link + Document attachment
       await sendWhatsAppMessage(senderPhone, `Your estimate proposal is ready!\n\nReview it online:\n${fileUrl}`);
       await sendWhatsAppDocument(senderPhone, fileUrl, fileName, `Estimate Proposal ${quoteNumber}`);
       return;
     }
 
-    // Still asking intake questions
     await sendWhatsAppMessage(senderPhone, parsed.customer_reply);
 
   } catch (err) {
-    console.error('Processing error:', err);
+    console.error('❌ Processing error:', err);
   }
 });
 
+// Updated to v26.0 to match your Meta Dashboard
 async function sendWhatsAppMessage(to, text) {
   try {
-    await fetch(`https://graph.facebook.com/v21.0/${waPhoneId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text', text: { body: text } })
     });
+    const result = await response.json();
+    if (result.error) console.error('❌ Meta API Error (Text):', result.error);
   } catch (err) {
-    console.error('WhatsApp text error:', err);
+    console.error('❌ WhatsApp text error:', err);
   }
 }
 
+// Updated to v26.0
 async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
   try {
-    await fetch(`https://graph.facebook.com/v21.0/${waPhoneId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -260,128 +254,11 @@ async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
         document: { link: fileUrl, filename: fileName, caption }
       })
     });
+    const result = await response.json();
+    if (result.error) console.error('❌ Meta API Error (Doc):', result.error);
   } catch (err) {
-    console.error('WhatsApp doc error:', err);
+    console.error('❌ WhatsApp doc error:', err);
   }
 }
-
-// Test endpoint: Triggers quote generation directly via browser or curl
-app.get('/test-quote', async (req, res) => {
-  try {
-    const quoteNumber = `Q-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const testQuoteData = {
-      quote_number: quoteNumber,
-      quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      quote_valid_until: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      customer_name: req.query.name || "Jane Doe",
-      customer_phone: req.query.phone || "(555) 019-2834",
-      customer_email: req.query.email || "jane@example.com",
-      property_address: req.query.address || "124 Pine Island Rd, Cape Coral, FL",
-      roof_type: "Standing Seam Metal",
-      roof_age: "18 years",
-      roof_size_sqft: "2,600",
-      stories: "1 story",
-      diagnosis_summary: "Multiple compromised fastener gaskets, moderate wind uplift along the south ridge, and surface corrosion around vent penetrations.",
-      subtotal: "$14,800.00",
-      tax: "$962.00",
-      total: "$15,762.00",
-      deposit_amount: "$2,500.00",
-      estimated_start_date: "Within 2 weeks",
-      estimated_duration: "3 business days",
-      scope: [
-        { title: "Tear-off & Deck Fastener Check", detail: "Remove existing surface material, inspect 5/8-inch plywood decking, and replace damaged sections." },
-        { title: "High-Temp Underlayment", detail: "Install full self-adhering synthetic secondary water barrier across all valleys and eaves." },
-        { title: "24-Gauge Metal Installation", detail: "Fasten standing seam panels with concealed clips and install color-matched ridge ventilation." }
-      ],
-      materials: [
-        { material_name: "24-Gauge Galvalume Standing Seam Panels", material_qty: "28 sq", material_unit_price: "$320.00", material_line_total: "$8,960.00" },
-        { material_name: "Self-Adhering High-Temp Underlayment", material_qty: "7 rolls", material_unit_price: "$145.00", material_line_total: "$1,015.00" },
-        { material_name: "Tear-off, Disposal & Installation Labor", material_qty: "1 job", material_unit_price: "$4,825.00", material_line_total: "$4,825.00" }
-      ]
-    };
-
-    const templatePath = path.join(__dirname, 'roof-quote-template.html');
-    const rawTemplate = fs.readFileSync(templatePath, 'utf8');
-    const filledHtml = populateQuoteTemplate(rawTemplate, testQuoteData);
-
-    const publicDir = path.join(__dirname, 'public');
-    if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
-
-    const fileName = `Roof_Quote_${quoteNumber}.html`;
-    fs.writeFileSync(path.join(publicDir, fileName), filledHtml, 'utf8');
-
-    const fileUrl = `https://${req.get('host')}/files/${fileName}`;
-    res.json({
-      status: "success",
-      quote_number: quoteNumber,
-      file_url: fileUrl
-    });
-  } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
-  }
-});
-
-// Test endpoint: Direct Gemini intake evaluation in browser
-app.get('/test-intake', async (req, res) => {
-  const incomingText = req.query.msg || "Hi, I need an estimate. Address is 310 SW 25th Terrace Cape Coral. Full tear-off, 2400 sqft, asphalt shingle to standing seam metal. 1 story, minor wind uplift, cash retail, timeline 3 weeks. Contact is Juan Londono, juan@test.com";
-  const dummyPhone = "test-browser-user";
-
-  if (!userSessions.has(dummyPhone)) {
-    userSessions.set(dummyPhone, {
-      data: { ...DEFAULT_STATE },
-      isComplete: false
-    });
-  }
-
-  const session = userSessions.get(dummyPhone);
-
-  try {
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiApiKey}`;
-
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: JSON.stringify({ current_state: session.data, incoming_message: incomingText }) }]
-          }
-        ],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          temperature: 0.1
-        }
-      })
-    });
-
-    const geminiData = await geminiResponse.json();
-
-    if (geminiData.error) {
-      return res.status(500).json({ status: "gemini_api_error", details: geminiData.error });
-    }
-
-    const rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawAiOutput) {
-      return res.status(500).json({ status: "empty_ai_output", raw: geminiData });
-    }
-
-    const parsed = JSON.parse(rawAiOutput);
-    session.data = { ...session.data, ...parsed.collected_data };
-    session.isComplete = Boolean(parsed.is_complete);
-
-    res.json({
-      status: "success",
-      input_message: incomingText,
-      extracted_data: session.data,
-      is_complete: session.isComplete,
-      ai_response: parsed.reply_to_user || parsed.next_question || parsed
-    });
-  } catch (error) {
-    res.status(500).json({ status: "server_error", message: error.message, stack: error.stack });
-  }
-});
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
