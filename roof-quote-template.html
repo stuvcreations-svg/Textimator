@@ -1,448 +1,189 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>{{company_name}} — Roof Estimate {{quote_number}}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!--
-  ============================================================================
-  TEMPLATING NOTES FOR DEVELOPERS / FOR THE CLAUDE API PROMPT
-  ============================================================================
-  This file is a plain-text template. Feed it to Claude (or your own code)
-  as a string and ask it to return the SAME HTML with placeholders replaced.
-
-  1) SIMPLE PLACEHOLDERS — replace {{like_this}} with a plain string.
-     Full list is inlined next to each field below, but the headline ones:
-     company_name, company_tagline, company_phone, company_email,
-     company_address, license_number, quote_number, quote_date,
-     quote_valid_until, customer_name, customer_phone, customer_email,
-     property_address, roof_type, roof_age, roof_size_sqft, stories,
-     diagnosis_summary, subtotal, tax, total, deposit_amount,
-     estimated_start_date, estimated_duration.
-
-  2) REPEATING BLOCKS — chunks of HTML that repeat once per item:
-       <!-- REPEAT:scope -->     ... one scope-of-work row ..  <!-- END:scope -->
-       <!-- REPEAT:materials --> ... one pricing line ..       <!-- END:materials -->
-     To add more than one item, duplicate everything between the REPEAT and
-     END comments (inclusive of the block's own markup, exclusive of the
-     comments themselves) once per item, filling in that item's placeholders
-     each time. If there's only one item, just fill in the single block.
-     This is intentionally simple string-templating, not a real templating
-     engine, so it works with a plain Claude API text completion.
-
-  3) TROUBLE SPOTS (nested repeat) — the "What we found" section repeats
-     once per DISTINCT LOCATION/ISSUE on the roof, not once per photo:
-       <!-- REPEAT:spots -->
-         {{spot_location}}   e.g. "Ridge vent area", "Gable face, north side"
-         <!-- REPEAT:spot_photos -->
-           {{photo_url}} / {{photo_caption}}
-         <!-- END:spot_photos -->
-         {{spot_problem}}    what's wrong at this spot, in plain language
-         {{spot_solution}}   what the crew will specifically do to fix it
-       <!-- END:spots -->
-     If two or more submitted photos show the same physical spot (same
-     damage, same angle, same area of roof), group them into ONE spot block
-     and put all of those photos in its spot_photos loop — don't create a
-     separate spot per photo. Only create a new spot block when a photo
-     shows a genuinely different location or issue on the roof.
-     Each photo placeholder ({{photo_url}}) expects a URL or a base64 data
-     URI (data:image/jpeg;base64,...). Captions and problem/solution text
-     come from what's visible in the photo plus whatever the homeowner or
-     agent said about it in chat.
-
-  Suggested Claude API system prompt:
-  "You will receive an HTML template and a JSON object of quote data
-   extracted from a WhatsApp conversation, including photos grouped by
-   physical spot on the roof (photos of the same spot are already grouped
-   together — if they aren't, group visually-matching photos yourself
-   before filling the template). Return only the completed HTML, with all
-   {{placeholders}} replaced and all REPEAT/END blocks expanded once per
-   matching item in the JSON. Do not change any markup, classes, or
-   styles. Do not add commentary before or after the HTML."
-  ============================================================================
--->
-
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
-  :root{
-    --ink:        #262A2E;
-    --slate:      #3E454B;
-    --paper:      #FBF8F3;
-    --panel:      #F1ECE3;
-    --rust:       #B5502E;
-    --rust-dark:  #8F3E22;
-    --amber:      #D9A441;
-    --line:       #DFD8C9;
-    --good:       #3F6B4E;
-  }
-
-  *{ box-sizing: border-box; }
-  html,body{ margin:0; padding:0; background:#E9E4D8; }
-  body{
-    font-family:'Inter', Arial, sans-serif;
-    color:var(--ink);
-    line-height:1.55;
-    font-size:15px;
-  }
-  h1,h2,h3,.num{ font-family:'Space Grotesk','Inter',Arial,sans-serif; }
-
-  .sheet{
-    max-width: 880px;
-    margin: 32px auto;
-    background: var(--paper);
-    border: 1px solid var(--line);
-    overflow: hidden;
-  }
-
-  /* ---------- HERO / HEADER ---------- */
-  .hero{
-    position: relative;
-    background: var(--ink);
-    color: var(--paper);
-    padding: 40px 44px 84px;
-    overflow: hidden;
-  }
-  .hero-top{
-    display:flex; justify-content:space-between; align-items:flex-start; gap: 24px;
-    position: relative; z-index: 2;
-  }
-  .brand-name{ font-size: 26px; font-weight: 700; letter-spacing: 0.2px; margin: 0; }
-  .brand-tagline{ margin: 6px 0 0; color: #C9CDD1; font-size: 14px; }
-  .quote-meta{ text-align: right; font-size: 13px; color: #C9CDD1; }
-  .quote-meta .qnum{ font-family:'Space Grotesk'; font-size: 18px; color: var(--paper); font-weight:600; }
-  .roofline{
-    position:absolute; left:0; right:0; bottom:0; height: 70px;
-    z-index:1; opacity: 0.9;
-  }
-
-  /* ---------- BODY SECTIONS ---------- */
-  .content{ padding: 0 44px 44px; }
-  section{ padding: 34px 0; border-bottom: 1px solid var(--line); page-break-inside: avoid; }
-  section:last-of-type{ border-bottom: none; }
-
-  .eyebrow{ display:none; } /* intentionally not using tracked-out all-caps labels */
-  h2.section-title{
-    font-size: 20px; margin: 0 0 4px; color: var(--ink);
-  }
-  .section-sub{ margin: 0 0 20px; color: var(--slate); font-size: 14px; }
-
-  /* Customer / property grid */
-  .info-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-  .info-card{ background: var(--panel); padding: 20px 22px; border-radius: 6px; }
-  .info-card h3{ margin: 0 0 12px; font-size: 14px; color: var(--rust-dark); }
-  .info-card dl{ margin:0; display:grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
-  .info-card dt{ color: var(--slate); font-size: 13px; }
-  .info-card dd{ margin:0; font-weight:600; font-size: 13.5px; }
-
-  /* Diagnosis */
-  .diagnosis-text{ font-size: 15px; color: var(--ink); margin: 0 0 22px; }
-
-  .spot-card{
-    background:#fff; border:1px solid var(--line); border-radius:8px;
-    padding: 18px 20px; margin-bottom: 16px;
-  }
-  .spot-card:last-child{ margin-bottom: 0; }
-  .spot-title{ margin:0 0 12px; font-size: 15px; color: var(--rust-dark); }
-  .spot-photos{
-    display:flex; gap: 10px; overflow-x:auto; margin: 0 0 16px; padding-bottom: 2px;
-  }
-  .spot-photos img{
-    width: 130px; height: 96px; object-fit: cover; border-radius: 6px;
-    border: 1px solid var(--line); flex: none;
-  }
-  .spot-body{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .spot-body .col{ border-left: 3px solid var(--line); padding-left: 12px; }
-  .spot-body .col.saw{ border-left-color: var(--rust); }
-  .spot-body .col.fix{ border-left-color: var(--good); }
-  .spot-body .col h4{ margin: 0 0 4px; font-size: 12.5px; color: var(--slate); font-weight: 600; }
-  .spot-body .col p{ margin:0; font-size: 13.5px; }
-
-  /* Scope of work */
-  .scope-list{ list-style:none; margin:0; padding:0; display:grid; gap: 12px; }
-  .scope-item{ display:flex; gap: 14px; align-items:flex-start; }
-  .scope-icon{ width: 22px; height: 22px; flex: none; margin-top: 2px; color: var(--rust); }
-  .scope-text b{ display:block; font-size: 14.5px; }
-  .scope-text span{ font-size: 13.5px; color: var(--slate); }
-
-  /* Materials & pricing */
-  table.pricing{ width:100%; border-collapse: collapse; font-size: 13.5px; }
-  table.pricing th{
-    text-align:left; font-weight:600; color: var(--slate);
-    border-bottom: 1px solid var(--line); padding: 8px 6px; font-size: 12.5px;
-  }
-  table.pricing td{ padding: 10px 6px; border-bottom: 1px solid var(--line); }
-  table.pricing td.num, table.pricing th.num{ text-align:right; }
-  .totals{ margin-top: 14px; margin-left: auto; width: 260px; font-size: 14px; }
-  .totals .row{ display:flex; justify-content:space-between; padding: 5px 0; }
-  .totals .row.grand{
-    border-top: 2px solid var(--ink); margin-top: 6px; padding-top: 10px;
-    font-family:'Space Grotesk'; font-size: 19px; font-weight: 700; color: var(--rust-dark);
-  }
-  .deposit-note{ margin-top: 14px; font-size: 12.5px; color: var(--slate); }
-
-  /* Timeline — this one's a real sequence, so numbered steps are fair game */
-  .timeline{ display:grid; gap: 0; }
-  .tl-step{ display:grid; grid-template-columns: 34px 1fr; gap: 16px; padding: 10px 0; }
-  .tl-num{
-    width:34px; height:34px; border-radius:50%; background: var(--rust);
-    color:#fff; display:flex; align-items:center; justify-content:center;
-    font-family:'Space Grotesk'; font-weight:700; font-size: 14px;
-  }
-  .tl-step b{ display:block; font-size: 14.5px; }
-  .tl-step span{ font-size: 13.5px; color: var(--slate); }
-
-  /* Warranty */
-  .warranty-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .warranty-card{
-    border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px;
-    background: #fff;
-  }
-  .warranty-card h3{ margin:0 0 8px; font-size: 14.5px; color: var(--good); }
-  .warranty-card p{ margin:0; font-size: 13.5px; color: var(--slate); }
-
-  /* Terms */
-  .terms-list{ margin:0; padding-left: 18px; font-size: 13.5px; color: var(--slate); }
-  .terms-list li{ margin-bottom: 6px; }
-
-  /* Signature */
-  .sign-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 10px; }
-  .sign-box{ border-top: 1px solid var(--ink); padding-top: 8px; font-size: 12.5px; color: var(--slate); }
-  .cta-line{
-    background: var(--amber); color: var(--ink); padding: 16px 20px; border-radius: 6px;
-    font-size: 14.5px; font-weight: 600; margin-bottom: 20px;
-  }
-
-  /* Footer */
-  .footer{
-    background: var(--ink); color: #C9CDD1; padding: 24px 44px; font-size: 12.5px;
-    display:flex; justify-content:space-between; flex-wrap:wrap; gap: 10px;
-  }
-  .footer b{ color: var(--paper); }
-
-  @media (max-width: 640px){
-    .info-grid, .warranty-grid, .sign-grid{ grid-template-columns: 1fr; }
-    .spot-body{ grid-template-columns: 1fr; gap: 10px; }
-    .hero{ padding: 30px 24px 70px; }
-    .content{ padding: 0 24px 30px; }
-  }
-
-  @media print{
-    body{ background: #fff; }
-    .sheet{ margin:0; border:none; max-width:none; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roofing Estimate {{quote_number}}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 40px;
+            border-top: 8px solid #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .company-info h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .company-info p {
+            margin: 5px 0 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .quote-meta {
+            text-align: right;
+        }
+        .quote-meta h2 {
+            margin: 0 0 5px;
+            color: #e74c3c;
+            font-size: 22px;
+        }
+        .quote-meta p {
+            margin: 2px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .section-title {
+            background-color: #34495e;
+            color: #fff;
+            padding: 10px 15px;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .data-group {
+            margin-bottom: 15px;
+        }
+        .data-group label {
+            display: block;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        .data-group .value {
+            font-size: 15px;
+            color: #2c3e50;
+            line-height: 1.5;
+            background: #fdfdfd;
+            padding: 10px;
+            border-left: 3px solid #bdc3c7;
+        }
+        .total-box {
+            background-color: #ecf0f1;
+            padding: 20px;
+            text-align: right;
+            margin-top: 30px;
+            border-radius: 4px;
+        }
+        .total-box h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+        .total-box .price {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-<div class="sheet">
+    <div class="container">
+        <div class="header">
+            <div class="company-info">
+                <h1>{{company_name}}</h1>
+                <p>{{company_tagline}}</p>
+                <p>{{company_address}} | {{company_phone}}</p>
+                <p>{{company_email}}</p>
+            </div>
+            <div class="quote-meta">
+                <h2>QUOTE {{quote_number}}</h2>
+                <p><strong>Date:</strong> {{quote_date}}</p>
+                <p><strong>Valid Until:</strong> {{quote_valid_until}}</p>
+            </div>
+        </div>
 
-  <!-- ============ HERO ============ -->
-  <header class="hero">
-    <div class="hero-top">
-      <div>
-        <p class="brand-name">{{company_name}}</p>
-        <p class="brand-tagline">{{company_tagline}}</p>
-      </div>
-      <div class="quote-meta">
-        <div class="qnum">Estimate {{quote_number}}</div>
-        <div>Prepared {{quote_date}}</div>
-        <div>Valid until {{quote_valid_until}}</div>
-      </div>
+        <div class="section-title">Client & Property Information</div>
+        <div class="grid">
+            <div class="data-group">
+                <label>Customer Name & Address</label>
+                <div class="value">{{customer_name_and_address}}</div>
+            </div>
+            <div class="data-group">
+                <label>Property Type</label>
+                <div class="value">{{building_stories}}</div>
+            </div>
+            <div class="data-group">
+                <label>Quote Type</label>
+                <div class="value">{{insurance_or_retail}}</div>
+            </div>
+            <div class="data-group">
+                <label>Root Cause / Damage Type</label>
+                <div class="value">{{root_cause}}</div>
+            </div>
+        </div>
+
+        <div class="section-title">Project Scope & Details</div>
+        <div class="grid">
+            <div class="data-group">
+                <label>Scope of Work</label>
+                <div class="value">{{scope_of_work}}</div>
+            </div>
+            <div class="data-group">
+                <label>Materials (Current & New)</label>
+                <div class="value">{{materials_current_and_new}}</div>
+            </div>
+            <div class="data-group">
+                <label>Add-ons & Contingencies</label>
+                <div class="value">{{add_ons_and_contingencies}}</div>
+            </div>
+            <div class="data-group">
+                <label>Site Notes & Access Restrictions</label>
+                <div class="value">{{site_notes}}</div>
+            </div>
+        </div>
+
+        <div class="section-title">Logistics & Terms</div>
+        <div class="grid">
+            <div class="data-group">
+                <label>Estimated Timeline</label>
+                <div class="value">{{timeline}}</div>
+            </div>
+            <div class="data-group">
+                <label>Payment Terms</label>
+                <div class="value">{{payment_terms}}</div>
+            </div>
+            <div class="data-group" style="grid-column: span 2;">
+                <label>Warranty Options</label>
+                <div class="value">{{warranty_options}}</div>
+            </div>
+        </div>
+
+        <div class="total-box">
+            <h3>Estimated Project Total</h3>
+            <div class="price">{{total_price}}</div>
+        </div>
     </div>
-
-    <!-- simple rooftop line-art, purely decorative -->
-    <svg class="roofline" viewBox="0 0 880 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polyline points="0,70 60,70 100,30 140,70 200,70 250,15 300,70 360,70 400,40 440,70 500,70 545,20 590,70 650,70 690,35 730,70 790,70 830,25 880,70"
-        fill="none" stroke="#B5502E" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>
-    </svg>
-  </header>
-
-  <div class="content">
-
-    <!-- ============ CUSTOMER / PROPERTY ============ -->
-    <section>
-      <h2 class="section-title">Who and where this is for</h2>
-      <p class="section-sub">The basics, straight from our chat.</p>
-      <div class="info-grid">
-        <div class="info-card">
-          <h3>Homeowner</h3>
-          <dl>
-            <dt>Name</dt><dd>{{customer_name}}</dd>
-            <dt>Phone</dt><dd>{{customer_phone}}</dd>
-            <dt>Email</dt><dd>{{customer_email}}</dd>
-          </dl>
-        </div>
-        <div class="info-card">
-          <h3>Property</h3>
-          <dl>
-            <dt>Address</dt><dd>{{property_address}}</dd>
-            <dt>Roof type</dt><dd>{{roof_type}}</dd>
-            <dt>Roof age</dt><dd>{{roof_age}}</dd>
-            <dt>Size</dt><dd>{{roof_size_sqft}} sq ft</dd>
-            <dt>Stories</dt><dd>{{stories}}</dd>
-          </dl>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ DIAGNOSIS + TROUBLE SPOTS ============ -->
-    <section>
-      <h2 class="section-title">What we found</h2>
-      <p class="section-sub">Based on your photos and what you told us.</p>
-      <p class="diagnosis-text">{{diagnosis_summary}}</p>
-
-      <!-- REPEAT:spots -->
-      <div class="spot-card">
-        <div class="spot-header">
-          <h3 class="spot-title">{{spot_location}}</h3>
-        </div>
-
-        <div class="spot-photos">
-          <!-- REPEAT:spot_photos -->
-          <img src="{{photo_url}}" alt="{{photo_caption}}" title="{{photo_caption}}">
-          <!-- END:spot_photos -->
-        </div>
-
-        <div class="spot-body">
-          <div class="col saw">
-            <h4>What we saw</h4>
-            <p>{{spot_problem}}</p>
-          </div>
-          <div class="col fix">
-            <h4>What we'll do</h4>
-            <p>{{spot_solution}}</p>
-          </div>
-        </div>
-      </div>
-      <!-- END:spots -->
-    </section>
-
-    <!-- ============ SCOPE OF WORK ============ -->
-    <section>
-      <h2 class="section-title">The game plan</h2>
-      <p class="section-sub">Here's exactly what our crew will do.</p>
-      <ul class="scope-list">
-        <!-- REPEAT:scope -->
-        <li class="scope-item">
-          <svg class="scope-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <div class="scope-text">
-            <b>{{scope_title}}</b>
-            <span>{{scope_detail}}</span>
-          </div>
-        </li>
-        <!-- END:scope -->
-      </ul>
-    </section>
-
-    <!-- ============ MATERIALS & PRICING ============ -->
-    <section>
-      <h2 class="section-title">Materials &amp; pricing</h2>
-      <p class="section-sub">No surprises — here's what everything costs, line by line.</p>
-      <table class="pricing">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="num">Qty</th>
-            <th class="num">Unit price</th>
-            <th class="num">Line total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- REPEAT:materials -->
-          <tr>
-            <td>{{material_name}}</td>
-            <td class="num">{{material_qty}}</td>
-            <td class="num">{{material_unit_price}}</td>
-            <td class="num">{{material_line_total}}</td>
-          </tr>
-          <!-- END:materials -->
-        </tbody>
-      </table>
-
-      <div class="totals">
-        <div class="row"><span>Subtotal</span><span>{{subtotal}}</span></div>
-        <div class="row"><span>Tax</span><span>{{tax}}</span></div>
-        <div class="row grand"><span>Total</span><span>{{total}}</span></div>
-      </div>
-      <p class="deposit-note">A deposit of {{deposit_amount}} secures your spot on the schedule; the balance is due on completion.</p>
-    </section>
-
-    <!-- ============ TIMELINE ============ -->
-    <section>
-      <h2 class="section-title">How the days will go</h2>
-      <p class="section-sub">Estimated start: {{estimated_start_date}} · Estimated duration: {{estimated_duration}}</p>
-      <div class="timeline">
-        <div class="tl-step">
-          <div class="tl-num">1</div>
-          <div><b>Drop-off &amp; setup</b><span>Materials arrive, the crew sets up protection for your landscaping and driveway.</span></div>
-        </div>
-        <div class="tl-step">
-          <div class="tl-num">2</div>
-          <div><b>Tear-off</b><span>Old roofing comes off down to the deck, and we check for any hidden damage underneath.</span></div>
-        </div>
-        <div class="tl-step">
-          <div class="tl-num">3</div>
-          <div><b>Repair &amp; install</b><span>Deck repairs as needed, then underlayment, flashing, and new roofing go on.</span></div>
-        </div>
-        <div class="tl-step">
-          <div class="tl-num">4</div>
-          <div><b>Cleanup &amp; magnet sweep</b><span>Full site cleanup, including a nail sweep so nothing's left behind.</span></div>
-        </div>
-        <div class="tl-step">
-          <div class="tl-num">5</div>
-          <div><b>Final walkthrough</b><span>We walk the property with you and answer any last questions before signing off.</span></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ WARRANTY ============ -->
-    <section>
-      <h2 class="section-title">What's backed, and for how long</h2>
-      <div class="warranty-grid">
-        <div class="warranty-card">
-          <h3>Workmanship warranty</h3>
-          <p>{{workmanship_warranty_text}}</p>
-        </div>
-        <div class="warranty-card">
-          <h3>Manufacturer warranty</h3>
-          <p>{{manufacturer_warranty_text}}</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ TERMS ============ -->
-    <section>
-      <h2 class="section-title">The fine print, made short</h2>
-      <ul class="terms-list">
-        <li>This estimate is valid until {{quote_valid_until}}; prices may change after that if materials shift.</li>
-        <li>A signed copy and the deposit noted above confirm your place on the schedule.</li>
-        <li>Any changes found once we're into the job (like rotten decking under old shingles) will be discussed and approved with you before we proceed.</li>
-        <li>Weather delays happen on roofs — we'll always keep you posted if the schedule shifts.</li>
-        <li>{{company_name}} is licensed and insured, license {{license_number}}.</li>
-      </ul>
-    </section>
-
-    <!-- ============ SIGN-OFF ============ -->
-    <section>
-      <div class="cta-line">Happy with the plan? Sign below and we'll get your roof on the calendar. 🏠</div>
-      <div class="sign-grid">
-        <div class="sign-box">Homeowner signature &amp; date</div>
-        <div class="sign-box">{{company_name}} representative &amp; date</div>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- ============ FOOTER ============ -->
-  <footer class="footer">
-    <div><b>{{company_name}}</b><br>{{company_address}}</div>
-    <div>{{company_phone}}<br>{{company_email}}</div>
-    <div>License {{license_number}}<br>Insured &amp; ready to climb</div>
-  </footer>
-
-</div>
 </body>
 </html>
