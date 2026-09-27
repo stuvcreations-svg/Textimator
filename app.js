@@ -62,49 +62,6 @@ THE "SOFT-SKIP" LOGIC (CRITICAL):
 - If all 12 fields are filled with either data or "skipped", set "is_complete": true.
 `;
 
-function populateQuoteTemplate(templateHtml, data) {
-  let html = templateHtml;
-
-  const scopeRegex = /<!-- REPEAT:scope -->([\s\S]*?)<!-- END:scope -->/;
-  const scopeMatch = html.match(scopeRegex);
-  if (scopeMatch && Array.isArray(data.scope)) {
-    const block = scopeMatch[1];
-    const expanded = data.scope.map(item =>
-      block.replace(/{{scope_title}}/g, item.title || '').replace(/{{scope_detail}}/g, item.detail || '')
-    ).join('\n');
-    html = html.replace(scopeRegex, expanded);
-  }
-
-  const matRegex = /<!-- REPEAT:materials -->([\s\S]*?)<!-- END:materials -->/;
-  const matMatch = html.match(matRegex);
-  if (matMatch && Array.isArray(data.materials)) {
-    const block = matMatch[1];
-    const expanded = data.materials.map(m =>
-      block.replace(/{{material_name}}/g, m.name || '')
-           .replace(/{{material_qty}}/g, m.qty || '')
-           .replace(/{{material_unit_price}}/g, m.unit_price || '')
-           .replace(/{{material_line_total}}/g, m.line_total || '')
-    ).join('\n');
-    html = html.replace(matRegex, expanded);
-  }
-
-  html = html.replace(/<!-- REPEAT:spots -->[\s\S]*?<!-- END:spots -->/g, '');
-
-  const companyDefaults = {
-    company_name: "Apex Elite Roofing",
-    company_tagline: "Precision Roofing & Storm Restoration",
-    company_phone: "(239) 555-0199",
-    company_email: "estimates@apexroofing.com",
-    company_address: "Cape Coral, FL 33904",
-    license_number: "CCC1332490",
-    workmanship_warranty_text: "10-year defect-free installation warranty backed directly by Apex Elite Roofing.",
-    manufacturer_warranty_text: "50-year non-prorated manufacturer warranty on certified architectural materials."
-  };
-
-  const merged = { ...companyDefaults, ...data };
-  return html.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
-}
-
 app.get('/', (req, res) => {
   const mode = req.query['hub.mode'];
   const challenge = req.query['hub.challenge'];
@@ -196,40 +153,44 @@ app.post('/', async (req, res) => {
     if (session.isComplete) {
       const quoteNumber = `Q-${Math.floor(100000 + Math.random() * 900000)}`;
 
+      // Helper function to handle missing/skipped data cleanly
+      const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
+
       const fullQuoteData = {
         quote_number: quoteNumber,
         quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         quote_valid_until: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        customer_name: session.data.client_name || 'Homeowner',
-        customer_phone: senderPhone,
-        customer_email: 'Provided via chat',
-        property_address: session.data.property_address || 'Job Site',
-        roof_type: session.data.desired_new_material || session.data.existing_roof_material || 'Architectural Shingle',
-        roof_age: 'Not Specified',
-        roof_size_sqft: '2,400',
-        stories: session.data.building_stories || '1 story',
-        diagnosis_summary: `Based on your reported ${session.data.scope_of_work || 'replacement'} scope and ${session.data.active_leaks_or_decking_damage || 'no visible decking rot'}, we have prepared a full tear-off and installation schedule.`,
-        subtotal: '$12,450.00',
-        tax: '$871.50',
-        total: '$13,321.50',
-        deposit_amount: '$1,500.00',
-        estimated_start_date: 'Within 2-3 weeks',
-        estimated_duration: '2-3 business days',
-        scope: [
-          { title: "Tear-off & Deck Inspection", detail: "Remove existing roofing down to plywood substrate and inspect for moisture damage." },
-          { title: "Underlayment & Flashing", detail: "Install high-temp synthetic ice/water underlayment and brand new drip edge perimeter." },
-          { title: "Surface Installation", detail: `Install certified ${session.data.desired_new_material || 'architectural'} roofing per local building code.` }
-        ],
-        materials: [
-          { material_name: "Architectural Roofing Material (Squares)", material_qty: "26", material_unit_price: "$210.00", material_line_total: "$5,460.00" },
-          { material_name: "Synthetic Underlayment Rolls", material_qty: "6", material_unit_price: "$115.00", material_line_total: "$690.00" },
-          { material_name: "Tear-off, Labor, & Disposal Services", material_qty: "1", material_unit_price: "$6,300.00", material_line_total: "$6,300.00" }
-        ]
+        
+        // Mapped from the 12 AI fields
+        customer_name_and_address: formatField(session.data.customer_name_and_address, 'Client Details Pending'),
+        building_stories: formatField(session.data.building_stories, 'Not specified'),
+        scope_of_work: formatField(session.data.scope_of_work, 'Pending evaluation'),
+        materials_current_and_new: formatField(session.data.materials_current_and_new, 'TBD upon inspection'),
+        root_cause: formatField(session.data.root_cause, 'Not specified'),
+        site_notes: formatField(session.data.site_notes, 'None'),
+        insurance_or_retail: formatField(session.data.insurance_or_retail, 'Standard Retail'),
+        add_ons_and_contingencies: formatField(session.data.add_ons_and_contingencies, 'None specified'),
+        total_price: formatField(session.data.total_price, 'TBD after physical inspection'),
+        timeline: formatField(session.data.timeline, 'TBD'),
+        payment_terms: formatField(session.data.payment_terms, 'Standard terms apply'),
+        warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty')
       };
+
+      const companyDefaults = {
+        company_name: "Stuv Creations Estimating",
+        company_tagline: "Contractor Intake & Proposal Generation",
+        company_phone: "(555) 555-0199",
+        company_email: "estimates@stuvcreations.com",
+        company_address: "Cape Coral, FL"
+      };
+
+      const merged = { ...companyDefaults, ...fullQuoteData };
 
       const templatePath = path.join(__dirname, 'roof-quote-template.html');
       const rawTemplate = fs.readFileSync(templatePath, 'utf8');
-      const finalHtml = populateQuoteTemplate(rawTemplate, fullQuoteData);
+      
+      // Replaces the {{placeholders}} with our merged data
+      const finalHtml = rawTemplate.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
 
       const publicDir = path.join(__dirname, 'public');
       if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
@@ -240,7 +201,7 @@ app.post('/', async (req, res) => {
       const host = req.get('host');
       const fileUrl = `https://${host}/files/${fileName}`;
 
-      await sendWhatsAppMessage(senderPhone, `Your estimate proposal is ready!\n\nReview it online:\n${fileUrl}`);
+      await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready to review:\n${fileUrl}`);
       await sendWhatsAppDocument(senderPhone, fileUrl, fileName, `Estimate Proposal ${quoteNumber}`);
       return;
     }
