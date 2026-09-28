@@ -2,11 +2,17 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
+// 1. Build the public directory immediately when the server boots
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true });
+}
+
 const app = express();
 app.use(express.json());
 
 // Expose the public folder so images can be loaded in the browser
-app.use('/files', express.static(path.join(__dirname, 'public')));
+app.use('/files', express.static(publicDir));
 
 const port = process.env.PORT || 3000;
 const verifyToken = process.env.VERIFY_TOKEN;
@@ -29,7 +35,6 @@ const DEFAULT_STATE = {
   timeline: null,
   payment_terms: null,
   warranty_options: null
-  // Note: roof_pictures is now handled securely outside of Gemini's state below
 };
 
 const getSystemInstruction = (contractorName) => `
@@ -67,27 +72,20 @@ THE "SOFT-SKIP" LOGIC:
 - If they say to proceed/skip, update the missing null fields in "collected_data" to "skipped", and set "is_complete": true.
 `;
 
-// Helper function to download and save WhatsApp media
 async function downloadWhatsAppImage(mediaId) {
   try {
-    // 1. Get the media URL from Meta
     const res = await fetch(`https://graph.facebook.com/v26.0/${mediaId}`, {
       headers: { 'Authorization': `Bearer ${waToken}` }
     });
     const data = await res.json();
     if (!data.url) throw new Error("No media URL returned by Meta");
 
-    // 2. Download the binary file using the URL
     const imgRes = await fetch(data.url, {
       headers: { 'Authorization': `Bearer ${waToken}` }
     });
     const buffer = await imgRes.arrayBuffer();
     
-    // 3. Save it to the public folder
     const fileName = `img_${mediaId}.jpg`;
-    const publicDir = path.join(__dirname, 'public');
-    if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
-    
     fs.writeFileSync(path.join(publicDir, fileName), Buffer.from(buffer));
     return fileName;
   } catch (err) {
@@ -121,12 +119,11 @@ app.post('/', async (req, res) => {
   const senderPhone = message.from;
   let incomingText = "";
 
-  // Initialize session with a dedicated images array
   if (!userSessions.has(senderPhone)) {
     userSessions.set(senderPhone, {
       contractorName: senderProfileName,
       data: { ...DEFAULT_STATE },
-      images: [], // Securely holds downloaded file names
+      images: [], 
       isComplete: false
     });
   }
@@ -137,7 +134,6 @@ app.post('/', async (req, res) => {
     return;
   }
 
-  // Handle Text vs Image routing
   if (message.type === 'text') {
     incomingText = message.text.body;
     console.log(`💬 Text from ${senderProfileName}: ${incomingText}`);
@@ -153,7 +149,6 @@ app.post('/', async (req, res) => {
       incomingText = `[System Note: The contractor tried to upload a photo, but the download failed.]`;
     }
   } else {
-    // Ignore voice notes, documents, etc.
     return; 
   }
 
@@ -194,10 +189,7 @@ app.post('/', async (req, res) => {
 
     let rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!rawAiOutput) {
-      console.error("❌ Gemini empty output:", JSON.stringify(geminiData));
-      return;
-    }
+    if (!rawAiOutput) return;
 
     rawAiOutput = rawAiOutput.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(rawAiOutput);
@@ -210,7 +202,6 @@ app.post('/', async (req, res) => {
       const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
       const host = req.get('host');
 
-      // Generate HTML img tags for all successfully downloaded photos
       let imageHtmlBlock = session.images.length > 0 
         ? session.images.map(img => `<img src="https://${host}/files/${img}" style="width:100%; max-width:250px; border-radius:8px; margin-bottom:10px; display:block;" alt="Roof condition photo"/>`).join('')
         : 'No photos logged';
@@ -233,12 +224,11 @@ app.post('/', async (req, res) => {
         payment_terms: formatField(session.data.payment_terms, 'Standard terms apply'),
         warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty'),
         
-        // Inject the generated image tags into the template
         roof_pictures: imageHtmlBlock 
       };
 
       const companyDefaults = {
-        company_name: "Stuv Creations",
+        company_name: "Stuv Creations Estimating",
         company_tagline: "Contractor Intake & Proposal Generation",
         company_phone: "(555) 555-0199",
         company_email: "estimates@stuvcreations.com",
@@ -252,7 +242,7 @@ app.post('/', async (req, res) => {
       const finalHtml = rawTemplate.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
 
       const fileName = `Roof_Quote_${quoteNumber}.html`;
-      fs.writeFileSync(path.join(__dirname, 'public', fileName), finalHtml, 'utf8');
+      fs.writeFileSync(path.join(publicDir, fileName), finalHtml, 'utf8');
 
       const fileUrl = `https://${host}/files/${fileName}`;
 
