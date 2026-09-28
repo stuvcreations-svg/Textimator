@@ -34,7 +34,7 @@ const DEFAULT_STATE = {
   warranty_options: null
 };
 
-// UPDATED INSTRUCTION: Extreme brevity, 1 question at a time, explicit photo requests
+// Extreme brevity, 1 question at a time, explicit photo requests
 const getSystemInstruction = (contractorName) => `
 You are an AI estimating assistant for a roofing contractor named ${contractorName}.
 
@@ -162,7 +162,6 @@ app.post('/', async (req, res) => {
           contents: [
             {
               role: 'user',
-              // Pass the current photo count so the AI knows if it needs to ask for pictures
               parts: [{ text: JSON.stringify({ 
                 current_state: session.data, 
                 photos_uploaded: session.images.length,
@@ -253,7 +252,6 @@ app.post('/', async (req, res) => {
       return;
     }
 
-    // UPDATED: Calculate progress perfectly in the background and append it to the text
     let replyText = parsed.customer_reply;
     const filledFields = Object.values(session.data).filter(val => val !== null && val !== 'skipped').length;
     const progressPct = Math.round((filledFields / 12) * 100);
