@@ -31,7 +31,6 @@ const DEFAULT_STATE = {
   roof_pictures: null
 };
 
-// Dynamic System Instruction to inject the contractor's name
 const getSystemInstruction = (contractorName) => `
 You are an expert AI estimating assistant. You are chatting with a roofing contractor named ${contractorName} who is currently in the field.
 
@@ -59,7 +58,7 @@ Your goal is to collect these 13 pieces of information:
 CONVERSATION RULES:
 - Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
 - Extract any details they provide into "collected_data". 
-- HANDLING CORRECTIONS: If ${contractorName} corrects a previous detail or changes their mind (e.g., "Wait, change the price to $20k" or "I meant metal roof, not shingle"), output the new value in "collected_data" to overwrite the old one, and briefly acknowledge the update in your reply.
+- HANDLING CORRECTIONS: If ${contractorName} corrects a previous detail or changes their mind (e.g., "Wait, change the price to $20k"), output the new value in "collected_data" to overwrite the old one, and briefly acknowledge the update in your reply.
 - Ask conversational follow-up questions to gather the missing fields (1 or 2 at a time).
 
 THE "SOFT-SKIP" LOGIC:
@@ -87,7 +86,6 @@ app.post('/', async (req, res) => {
   const message = value?.messages?.[0];
   const contacts = value?.contacts?.[0];
   
-  // Extract their WhatsApp Profile name automatically
   const senderProfileName = contacts?.profile?.name || 'Contractor';
 
   if (!message || message.type !== 'text') return;
@@ -147,12 +145,15 @@ app.post('/', async (req, res) => {
       }
     }
 
-    const rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    let rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!rawAiOutput) {
-      console.error("❌ Gemini returned empty output");
+      console.error("❌ Gemini returned empty output or error:", JSON.stringify(geminiData));
       return;
     }
+
+    // Stripping markdown tags if Gemini includes them
+    rawAiOutput = rawAiOutput.replace(/```json/g, '').replace(/```/g, '').trim();
 
     const parsed = JSON.parse(rawAiOutput);
     session.data = { ...session.data, ...parsed.collected_data };
@@ -179,11 +180,11 @@ app.post('/', async (req, res) => {
         timeline: formatField(session.data.timeline, 'TBD'),
         payment_terms: formatField(session.data.payment_terms, 'Standard terms apply'),
         warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty'),
-        roof_pictures: formatField(session.data.roof_pictures, 'No photos logged') // 13th field mapped
+        roof_pictures: formatField(session.data.roof_pictures, 'No photos logged')
       };
 
       const companyDefaults = {
-        company_name: "Stuv Creations Estimating",
+        company_name: "Stuv Creations",
         company_tagline: "Contractor Intake & Proposal Generation",
         company_phone: "(555) 555-0199",
         company_email: "estimates@stuvcreations.com",
@@ -219,11 +220,13 @@ app.post('/', async (req, res) => {
 
 async function sendWhatsAppMessage(to, text) {
   try {
-    await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text', text: { body: text } })
     });
+    const result = await response.json();
+    if (result.error) console.error('❌ Meta API Error (Text):', JSON.stringify(result.error));
   } catch (err) {
     console.error('❌ WhatsApp text error:', err);
   }
@@ -231,7 +234,7 @@ async function sendWhatsAppMessage(to, text) {
 
 async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
   try {
-    await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
+    const response = await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -242,6 +245,8 @@ async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
         document: { link: fileUrl, filename: fileName, caption }
       })
     });
+    const result = await response.json();
+    if (result.error) console.error('❌ Meta API Error (Doc):', JSON.stringify(result.error));
   } catch (err) {
     console.error('❌ WhatsApp doc error:', err);
   }
