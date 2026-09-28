@@ -226,11 +226,11 @@ app.post('/', async (req, res) => {
         roof_pictures: imageHtmlBlock 
       };
 
-      const companyDefaults = {
-        company_name: "Stuv Creations Estimating",
+const companyDefaults = {
+        company_name: "Textimator",
         company_tagline: "Contractor Intake & Proposal Generation",
-        company_phone: "(555) 555-0199",
-        company_email: "estimates@stuvcreations.com",
+        company_phone: "(555) 555-0199", // Update with your actual business number
+        company_email: "estimates@textimator.com",
         company_address: "Cape Coral, FL"
       };
 
