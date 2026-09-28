@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
-// Build the public directory immediately when the server boots
 const publicDir = path.join(__dirname, 'public');
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
@@ -10,8 +9,6 @@ if (!fs.existsSync(publicDir)) {
 
 const app = express();
 app.use(express.json());
-
-// Expose the public folder so images can be loaded in the browser
 app.use('/files', express.static(publicDir));
 
 const port = process.env.PORT || 3000;
@@ -37,17 +34,20 @@ const DEFAULT_STATE = {
   warranty_options: null
 };
 
-// UPDATED INSTRUCTION: Added REQUIRED fields and Post-Edit logic
+// UPDATED INSTRUCTION: Extreme brevity, 1 question at a time, explicit photo requests
 const getSystemInstruction = (contractorName) => `
-You are an expert AI estimating assistant. You are chatting with a roofing contractor named ${contractorName} who is currently in the field.
+You are an AI estimating assistant for a roofing contractor named ${contractorName}.
 
-Keep your tone natural and helpful. ADAPT to their conversational style and always address them by name appropriately. 
+TONE & PACING (CRITICAL):
+- Act like you are sending a quick SMS text message. Be EXTREMELY brief, friendly, and efficient.
+- Max 1 to 2 short sentences per reply. Do not ramble.
+- You MUST ask ONLY ONE question at a time. Never bombard them with multiple questions.
 
-LANGUAGE RULE (CRITICAL):
-- If ${contractorName} speaks to you in Spanish, you MUST reply to them in Spanish. 
-- However, ALL data you extract into the "collected_data" JSON MUST be translated into professional English for the final report.
+LANGUAGE RULE:
+- If ${contractorName} speaks in Spanish, reply in Spanish. 
+- ALL data extracted into the "collected_data" JSON MUST be translated into professional English.
 
-Your goal is to collect these 12 pieces of text information:
+GOAL: Collect these 12 pieces of text information:
 1. customer_name_and_address (REQUIRED)
 2. building_stories
 3. scope_of_work (REQUIRED)
@@ -61,16 +61,14 @@ Your goal is to collect these 12 pieces of text information:
 11. payment_terms
 12. warranty_options
 
+PICTURE RULE:
+- Pay attention to "photos_uploaded" in the prompt data. If it is 0, you must explicitly ask them to upload photos of the roof at some point during the chat.
+
 CONVERSATION RULES:
 - Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
 - Extract any details they provide into "collected_data". 
-- If the system notes that an image was uploaded, naturally acknowledge you received the photo in your "customer_reply".
-- POST-QUOTE EDITS: If they correct a detail AFTER the quote was generated (e.g., "Change the price to $15k" or "I meant 2 stories"), update the value in "collected_data", acknowledge the change, and set "is_complete": true so the system can regenerate the updated quote.
-
-THE "SOFT-SKIP" & MINIMUM REQUIREMENT LOGIC:
-- You CANNOT set "is_complete": true unless the 3 REQUIRED fields (Name/Address, Scope of Work, and Total Price) are filled.
-- If they ask to skip or generate the quote, check the REQUIRED fields. If any are missing, politely refuse and ask for them.
-- If the required fields ARE present, set the remaining null fields to "skipped" and set "is_complete": true.
+- POST-QUOTE EDITS: If they correct a detail AFTER the quote was generated, update the value, acknowledge the change briefly, and set "is_complete": true so the system rebuilds the file.
+- GENERATE QUOTE: If they ask to skip or generate the quote, check the 3 REQUIRED fields. If any are missing, politely refuse and ask for the missing ones. If they are present, set "is_complete": true.
 `;
 
 async function downloadWhatsAppImage(mediaId) {
@@ -120,7 +118,6 @@ app.post('/', async (req, res) => {
   const senderPhone = message.from;
   let incomingText = "";
 
-  // UPDATED: Added a persistent quote number to the session so edits update the same file
   if (!userSessions.has(senderPhone)) {
     userSessions.set(senderPhone, {
       contractorName: senderProfileName,
@@ -131,8 +128,6 @@ app.post('/', async (req, res) => {
     });
   }
   const session = userSessions.get(senderPhone);
-
-  // REMOVED the block that locked the user out once isComplete was true
 
   if (message.type === 'text') {
     incomingText = message.text.body;
@@ -167,7 +162,12 @@ app.post('/', async (req, res) => {
           contents: [
             {
               role: 'user',
-              parts: [{ text: JSON.stringify({ current_state: session.data, incoming_message: incomingText }) }]
+              // Pass the current photo count so the AI knows if it needs to ask for pictures
+              parts: [{ text: JSON.stringify({ 
+                current_state: session.data, 
+                photos_uploaded: session.images.length,
+                incoming_message: incomingText 
+              }) }]
             }
           ],
           generationConfig: {
@@ -200,7 +200,7 @@ app.post('/', async (req, res) => {
     if (session.isComplete) {
       const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
       const host = req.get('host');
-      const quoteNumber = session.quoteNumber; // Keep using the same quote number
+      const quoteNumber = session.quoteNumber;
 
       let imageHtmlBlock = session.images.length > 0 
         ? session.images.map(img => `<img src="https://${host}/files/${img}" style="width:100%; max-width:250px; border-radius:8px; margin-bottom:10px; display:block;" alt="Roof condition photo"/>`).join('')
@@ -249,12 +249,18 @@ app.post('/', async (req, res) => {
       await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready:\n${fileUrl}`);
       await sendWhatsAppDocument(senderPhone, fileUrl, fileName, `Estimate Proposal ${quoteNumber}`);
       
-      // UPDATED: Reset isComplete so they can continue editing the existing file
       session.isComplete = false;
       return;
     }
 
-    await sendWhatsAppMessage(senderPhone, parsed.customer_reply);
+    // UPDATED: Calculate progress perfectly in the background and append it to the text
+    let replyText = parsed.customer_reply;
+    const filledFields = Object.values(session.data).filter(val => val !== null && val !== 'skipped').length;
+    const progressPct = Math.round((filledFields / 12) * 100);
+    
+    replyText += `\n\n📊 ${progressPct}% | ${filledFields}/12`;
+
+    await sendWhatsAppMessage(senderPhone, replyText);
 
   } catch (err) {
     console.error('❌ Processing error:', err);
