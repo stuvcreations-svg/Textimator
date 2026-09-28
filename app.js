@@ -88,10 +88,21 @@ app.post('/', async (req, res) => {
   
   const senderProfileName = contacts?.profile?.name || 'Contractor';
 
-  if (!message || message.type !== 'text') return;
+if (!message) return;
 
   const senderPhone = message.from;
-  const incomingText = message.text.body;
+  let incomingText = "";
+
+  if (message.type === 'text') {
+    incomingText = message.text.body;
+  } else if (message.type === 'image') {
+    // Translates the image into a system note for Gemini
+    const caption = message.image.caption ? ` Caption included: "${message.image.caption}"` : "";
+    incomingText = `[System Note: The contractor just uploaded an image.${caption}]`;
+  } else {
+    // Silently ignore voice notes, stickers, or videos for now
+    return;
+  }
   console.log(`💬 Message from ${senderProfileName} (${senderPhone}): ${incomingText}`);
 
   if (!userSessions.has(senderPhone)) {
