@@ -1,231 +1,156 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roofing Estimate {{quote_number}}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
-        
-        body {
-            font-family: 'Montserrat', sans-serif;
-            margin: 0;
-            padding: 40px;
-            background-color: #f2f3f4;
-            color: #182227;
-            -webkit-font-smoothing: antialiased;
-        }
-        .container {
-            max-width: 850px;
-            margin: auto;
-            background: #ffffff;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-        }
-        
-        /* Dark Top Bar mimicking the report headers */
-        .header-bar {
-            background-color: #182227;
-            color: #ffffff;
-            padding: 25px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 5px solid #d35400;
-        }
-        .header-left {
-            font-size: 13px;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: #a0aab2;
-        }
-        .header-left span {
-            color: #ffffff;
-            font-weight: 700;
-        }
-        .header-right {
-            font-size: 20px;
-            font-weight: 700;
-            color: #d35400;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
-        .content {
-            padding: 40px;
-        }
+const app = express();
+app.use(express.json());
 
-        /* Section Titles */
-        .section-header {
-            font-size: 22px;
-            font-weight: 700;
-            color: #182227;
-            margin-bottom: 30px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #e0e4e8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .section-header span {
-            color: #d35400;
-        }
+app.use('/files', express.static(path.join(__dirname, 'public')));
 
-        /* Data Grid */
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 35px;
-            margin-bottom: 50px;
-        }
-        .data-block label {
-            display: block;
-            font-size: 11px;
-            color: #d35400;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            margin-bottom: 6px;
-        }
-        .data-block .val {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #333333;
-            font-weight: 400;
-        }
+const port = process.env.PORT || 3000;
+const verifyToken = process.env.VERIFY_TOKEN;
+const waToken = process.env.WA_TOKEN;
+const waPhoneId = process.env.WA_PHONE_ID;
+const geminiApiKey = process.env.GEMINI_API_KEY;
 
-        /* Clean Table mimicking the "Terms" layout */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 50px;
-        }
-        th {
-            text-align: left;
-            padding: 14px 16px;
-            background-color: #182227;
-            color: #ffffff;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 1.5px;
-        }
-        td {
-            padding: 16px;
-            border-bottom: 1px solid #e0e4e8;
-            font-size: 14px;
-            color: #333333;
-            line-height: 1.5;
-        }
-        tr:nth-child(even) td {
-            background-color: #fafbfc;
-        }
+const userSessions = new Map();
 
-        /* Dark Pricing Block mimicking the "Options" tier */
-        .pricing-block {
-            background-color: #182227;
-            color: #ffffff;
-            padding: 40px;
-            border-top: 5px solid #d35400;
-            text-align: center;
-        }
-        .pricing-block h3 {
-            color: #d35400;
-            font-size: 14px;
-            text-transform: uppercase;
-            margin: 0 0 15px 0;
-            letter-spacing: 2px;
-        }
-        .pricing-block .price {
-            font-size: 54px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -1px;
-        }
-        .pricing-block p {
-            color: #a0aab2;
-            font-size: 13px;
-            margin-top: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header-bar">
-            <div class="header-left">Quote <span>{{quote_number}}</span></div>
-            <div class="header-right">{{company_name}}</div>
-        </div>
-        
-        <div class="content">
-            <div class="section-header">Client & <span>Property</span></div>
-            <div class="grid-2">
-                <div class="data-block">
-                    <label>Customer Details</label>
-                    <div class="val">{{customer_name_and_address}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Building Type</label>
-                    <div class="val">{{building_stories}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Quote Type</label>
-                    <div class="val">{{insurance_or_retail}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Photos / Evidence</label>
-                    <div class="val">{{roof_pictures}}</div>
-                </div>
-            </div>
+const DEFAULT_STATE = {
+  customer_name_and_address: null,
+  building_stories: null,
+  scope_of_work: null,
+  materials_current_and_new: null,
+  root_cause: null,
+  site_notes: null,
+  insurance_or_retail: null,
+  add_ons_and_contingencies: null,
+  total_price: null,
+  timeline: null,
+  payment_terms: null,
+  warranty_options: null,
+  roof_pictures: null
+};
 
-            <div class="section-header">Inspection <span>Findings</span></div>
-            <div class="grid-2">
-                <div class="data-block">
-                    <label>Root Cause</label>
-                    <div class="val">{{root_cause}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Materials</label>
-                    <div class="val">{{materials_current_and_new}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Scope of Work</label>
-                    <div class="val">{{scope_of_work}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Site Notes</label>
-                    <div class="val">{{site_notes}}</div>
-                </div>
-                <div class="data-block" style="grid-column: span 2;">
-                    <label>Add-ons & Contingencies</label>
-                    <div class="val">{{add_ons_and_contingencies}}</div>
-                </div>
-            </div>
+const getSystemInstruction = (contractorName) => `
+You are an expert AI estimating assistant. You are chatting with a roofing contractor named ${contractorName} who is currently in the field.
 
-            <div class="section-header">Project <span>Terms</span></div>
-            <table>
-                <tr>
-                    <th>Item</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>Timeline</td>
-                    <td>{{timeline}}</td>
-                </tr>
-                <tr>
-                    <td>Payment Terms</td>
-                    <td>{{payment_terms}}</td>
-                </tr>
-                <tr>
-                    <td>Warranty</td>
-                    <td>{{warranty_options}}</td>
-                </tr>
-            </table>
+Keep your tone natural and helpful. ADAPT to their conversational style and always address them by name appropriately. 
 
-            <div class="pricing-block">
-                <h3>Estimated Project Total</h3>
-                <div class="price">{{total_price}}</div>
-                <p>Valid until {{quote_valid_until}}</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+LANGUAGE RULE (CRITICAL):
+- If ${contractorName} speaks to you in Spanish, you MUST reply to them in Spanish. 
+- However, ALL data you extract into the "collected_data" JSON MUST be translated into professional English for the final report.
+
+Your goal is to collect these 13 pieces of information:
+1. customer_name_and_address: Customer's name and property address.
+2. building_stories: Single-story or multi-story.
+3. scope_of_work: Localized repair or full roof replacement.
+4. materials_current_and_new: Current roof material and specific new material to install.
+5. root_cause: Root cause of the issue (e.g., wind/hail, age, active leak).
+6. site_notes: Property access restrictions or specific site notes.
+7. insurance_or_retail: Insurance claim or retail (out-of-pocket).
+8. add_ons_and_contingencies: Add-ons or special conditions (skylights, rotten wood).
+9. total_price: Total final price to quote the customer.
+10. timeline: Estimated start date or lead time for the build.
+11. payment_terms: Payment terms (e.g., 50% deposit, financing).
+12. warranty_options: Workmanship or manufacturer warranty offered.
+13. roof_pictures: Ask if they have any pictures of the roof to add to the file.
+
+CONVERSATION RULES:
+- Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
+- Extract any details they provide into "collected_data". 
+- HANDLING CORRECTIONS: If ${contractorName} corrects a previous detail or changes their mind (e.g., "Wait, change the price to $20k"), output the new value in "collected_data" to overwrite the old one, and briefly acknowledge the update in your reply.
+- Ask conversational follow-up questions to gather the missing fields (1 or 2 at a time).
+
+THE "SOFT-SKIP" LOGIC:
+- If they seem finished or ask you to build the quote, check if any of the 13 fields are still null.
+- If fields are missing, politely list what is missing and ask if they want to proceed without them. 
+- If they say to proceed/skip, update the missing null fields in "collected_data" to "skipped", and set "is_complete": true.
+`;
+
+app.get('/', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const challenge = req.query['hub.challenge'];
+  const token = req.query['hub.verify_token'];
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    res.status(200).send(challenge);
+  } else {
+    res.status(403).end();
+  }
+});
+
+app.post('/', async (req, res) => {
+  res.status(200).send('EVENT_RECEIVED');
+
+  const value = req.body.entry?.[0]?.changes?.[0]?.value || req.body.value;
+  const message = value?.messages?.[0];
+  const contacts = value?.contacts?.[0];
+  
+  const senderProfileName = contacts?.profile?.name || 'Contractor';
+
+  if (!message || message.type !== 'text') return;
+
+  const senderPhone = message.from;
+  const incomingText = message.text.body;
+  console.log(`💬 Message from ${senderProfileName} (${senderPhone}): ${incomingText}`);
+
+  if (!userSessions.has(senderPhone)) {
+    userSessions.set(senderPhone, {
+      contractorName: senderProfileName,
+      data: { ...DEFAULT_STATE },
+      isComplete: false
+    });
+  }
+
+  const session = userSessions.get(senderPhone);
+
+  if (session.isComplete) {
+    await sendWhatsAppMessage(senderPhone, `Tu estimación ya fue generada, ${session.contractorName}. / Your estimate is already generated!`);
+    return;
+  }
+
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiApiKey}`;
+    let geminiData = null;
+    let attempt = 0;
+    const maxAttempts = 3;
+
+    while (attempt < maxAttempts) {
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: getSystemInstruction(session.contractorName) }] },
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: JSON.stringify({ current_state: session.data, incoming_message: incomingText }) }]
+            }
+          ],
+          generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1
+          }
+        })
+      });
+
+      geminiData = await geminiResponse.json();
+
+      if (geminiData.error && geminiData.error.code === 503) {
+        attempt++;
+        console.log(`⚠️ Gemini 503 Demand Spike. Retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        break;
+      }
+    }
+
+    let rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!rawAiOutput) {
+      console.error("❌ Gemini returned empty output or error:", JSON.stringify(geminiData));
+      return;
+    }
+
+    // Stripping markdown tags if Gemini includes them
+    rawAiOutput = rawAiOutput.replace(/```json/g, '').replace(/
