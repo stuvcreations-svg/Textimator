@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
-// 1. Build the public directory immediately when the server boots
+// Build the public directory immediately when the server boots
 const publicDir = path.join(__dirname, 'public');
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
@@ -37,6 +37,7 @@ const DEFAULT_STATE = {
   warranty_options: null
 };
 
+// UPDATED INSTRUCTION: Added REQUIRED fields and Post-Edit logic
 const getSystemInstruction = (contractorName) => `
 You are an expert AI estimating assistant. You are chatting with a roofing contractor named ${contractorName} who is currently in the field.
 
@@ -47,29 +48,29 @@ LANGUAGE RULE (CRITICAL):
 - However, ALL data you extract into the "collected_data" JSON MUST be translated into professional English for the final report.
 
 Your goal is to collect these 12 pieces of text information:
-1. customer_name_and_address: Customer's name and property address.
-2. building_stories: Single-story or multi-story.
-3. scope_of_work: Localized repair or full roof replacement.
-4. materials_current_and_new: Current roof material and specific new material to install.
-5. root_cause: Root cause of the issue (e.g., wind/hail, age, active leak).
-6. site_notes: Property access restrictions or specific site notes.
-7. insurance_or_retail: Insurance claim or retail (out-of-pocket).
-8. add_ons_and_contingencies: Add-ons or special conditions (skylights, rotten wood).
-9. total_price: Total final price to quote the customer.
-10. timeline: Estimated start date or lead time for the build.
-11. payment_terms: Payment terms (e.g., 50% deposit, financing).
-12. warranty_options: Workmanship or manufacturer warranty offered.
+1. customer_name_and_address (REQUIRED)
+2. building_stories
+3. scope_of_work (REQUIRED)
+4. materials_current_and_new
+5. root_cause
+6. site_notes
+7. insurance_or_retail
+8. add_ons_and_contingencies
+9. total_price (REQUIRED)
+10. timeline
+11. payment_terms
+12. warranty_options
 
 CONVERSATION RULES:
 - Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
 - Extract any details they provide into "collected_data". 
 - If the system notes that an image was uploaded, naturally acknowledge you received the photo in your "customer_reply".
-- Ask conversational follow-up questions to gather the missing fields (1 or 2 at a time).
+- POST-QUOTE EDITS: If they correct a detail AFTER the quote was generated (e.g., "Change the price to $15k" or "I meant 2 stories"), update the value in "collected_data", acknowledge the change, and set "is_complete": true so the system can regenerate the updated quote.
 
-THE "SOFT-SKIP" LOGIC:
-- If they seem finished or ask you to build the quote, check if any of the 12 fields are still null.
-- If fields are missing, politely list what is missing and ask if they want to proceed without them. 
-- If they say to proceed/skip, update the missing null fields in "collected_data" to "skipped", and set "is_complete": true.
+THE "SOFT-SKIP" & MINIMUM REQUIREMENT LOGIC:
+- You CANNOT set "is_complete": true unless the 3 REQUIRED fields (Name/Address, Scope of Work, and Total Price) are filled.
+- If they ask to skip or generate the quote, check the REQUIRED fields. If any are missing, politely refuse and ask for them.
+- If the required fields ARE present, set the remaining null fields to "skipped" and set "is_complete": true.
 `;
 
 async function downloadWhatsAppImage(mediaId) {
@@ -119,20 +120,19 @@ app.post('/', async (req, res) => {
   const senderPhone = message.from;
   let incomingText = "";
 
+  // UPDATED: Added a persistent quote number to the session so edits update the same file
   if (!userSessions.has(senderPhone)) {
     userSessions.set(senderPhone, {
       contractorName: senderProfileName,
       data: { ...DEFAULT_STATE },
       images: [], 
-      isComplete: false
+      isComplete: false,
+      quoteNumber: `Q-${Math.floor(100000 + Math.random() * 900000)}` 
     });
   }
   const session = userSessions.get(senderPhone);
 
-  if (session.isComplete) {
-    await sendWhatsAppMessage(senderPhone, `Tu estimación ya fue generada. / Your estimate is already generated!`);
-    return;
-  }
+  // REMOVED the block that locked the user out once isComplete was true
 
   if (message.type === 'text') {
     incomingText = message.text.body;
@@ -198,9 +198,9 @@ app.post('/', async (req, res) => {
     session.isComplete = Boolean(parsed.is_complete);
 
     if (session.isComplete) {
-      const quoteNumber = `Q-${Math.floor(100000 + Math.random() * 900000)}`;
       const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
       const host = req.get('host');
+      const quoteNumber = session.quoteNumber; // Keep using the same quote number
 
       let imageHtmlBlock = session.images.length > 0 
         ? session.images.map(img => `<img src="https://${host}/files/${img}" style="width:100%; max-width:250px; border-radius:8px; margin-bottom:10px; display:block;" alt="Roof condition photo"/>`).join('')
@@ -248,6 +248,9 @@ app.post('/', async (req, res) => {
 
       await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready:\n${fileUrl}`);
       await sendWhatsAppDocument(senderPhone, fileUrl, fileName, `Estimate Proposal ${quoteNumber}`);
+      
+      // UPDATED: Reset isComplete so they can continue editing the existing file
+      session.isComplete = false;
       return;
     }
 
