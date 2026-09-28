@@ -1,244 +1,296 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roofing Estimate {{quote_number}}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
-        
-        body { 
-            font-family: 'Montserrat', sans-serif; 
-            background-color: #f4f7f6; 
-            color: #2C3E50; 
-            margin: 0; 
-            padding: 40px; 
-            -webkit-font-smoothing: antialiased;
-        }
-        .container { 
-            max-width: 850px; 
-            margin: auto; 
-            background: #ffffff; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            border-radius: 8px; 
-            overflow: hidden; 
-        }
-        .header-bar { 
-            background-color: #182227; 
-            color: #ffffff; 
-            padding: 30px 40px; 
-            border-bottom: 6px solid #d35400; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .header-left { 
-            font-size: 14px; 
-            text-transform: uppercase; 
-            color: #a0aab2; 
-            letter-spacing: 1px; 
-        }
-        .header-left span { 
-            color: #ffffff; 
-            font-weight: 700; 
-            font-size: 18px; 
-            display: block; 
-            margin-top: 5px; 
-        }
-        .header-right { 
-            text-align: right; 
-        }
-        .header-right h1 { 
-            margin: 0; 
-            color: #d35400; 
-            font-size: 22px; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px; 
-        }
-        .header-right p { 
-            margin: 5px 0 0; 
-            font-size: 12px; 
-            color: #a0aab2; 
-        }
-        
-        .content { padding: 40px; }
-        
-        .section-header { 
-            font-size: 20px; 
-            font-weight: 700; 
-            color: #182227; 
-            border-bottom: 2px solid #f0f0f0; 
-            padding-bottom: 10px; 
-            margin-bottom: 25px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-        .section-header span { color: #d35400; }
-        
-        .grid-2 { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 30px; 
-            margin-bottom: 40px; 
-        }
-        .data-block label { 
-            display: block; 
-            font-size: 11px; 
-            color: #d35400; 
-            text-transform: uppercase; 
-            font-weight: 700; 
-            letter-spacing: 1px; 
-            margin-bottom: 8px; 
-        }
-        .data-block .val { 
-            font-size: 15px; 
-            line-height: 1.6; 
-            color: #333333; 
-            background: #fcfcfc; 
-            padding: 12px; 
-            border-left: 3px solid #182227; 
-            border-radius: 0 4px 4px 0; 
-        }
-        
-        .photos-section { margin-bottom: 40px; }
-        .photos-grid { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 15px; 
-        }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 40px; 
-        }
-        th { 
-            text-align: left; 
-            padding: 15px; 
-            background-color: #182227; 
-            color: #ffffff; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-        td { 
-            padding: 15px; 
-            border-bottom: 1px solid #eee; 
-            font-size: 14px; 
-            color: #333333; 
-        }
-        tr:nth-child(even) td { background-color: #fafafa; }
-        
-        .pricing-block { 
-            background-color: #182227; 
-            color: #ffffff; 
-            padding: 40px; 
-            text-align: center; 
-            border-radius: 8px; 
-            border-top: 5px solid #d35400; 
-        }
-        .pricing-block h3 { 
-            color: #d35400; 
-            font-size: 16px; 
-            text-transform: uppercase; 
-            margin: 0 0 10px 0; 
-            letter-spacing: 2px; 
-        }
-        .pricing-block .price { 
-            font-size: 48px; 
-            font-weight: 700; 
-            margin: 0; 
-        }
-        .pricing-block p { 
-            color: #a0aab2; 
-            font-size: 13px; 
-            margin-top: 15px; 
-            text-transform: uppercase; 
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header-bar">
-            <div class="header-left">Estimate Number <span>{{quote_number}}</span></div>
-            <div class="header-right">
-                <h1>{{company_name}}</h1>
-                <p>{{company_phone}} | {{company_email}}</p>
-            </div>
-        </div>
-        
-        <div class="content">
-            <div class="section-header">Client & <span>Property</span></div>
-            <div class="grid-2">
-                <div class="data-block">
-                    <label>Customer Details</label>
-                    <div class="val">{{customer_name_and_address}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Building Type</label>
-                    <div class="val">{{building_stories}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Quote Type</label>
-                    <div class="val">{{insurance_or_retail}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Root Cause</label>
-                    <div class="val">{{root_cause}}</div>
-                </div>
-            </div>
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
-            <div class="section-header">Inspection <span>Findings</span></div>
-            <div class="grid-2">
-                <div class="data-block">
-                    <label>Scope of Work</label>
-                    <div class="val">{{scope_of_work}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Materials</label>
-                    <div class="val">{{materials_current_and_new}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Site Notes</label>
-                    <div class="val">{{site_notes}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Add-ons & Contingencies</label>
-                    <div class="val">{{add_ons_and_contingencies}}</div>
-                </div>
-            </div>
-            
-            <div class="section-header">Photos & <span>Evidence</span></div>
-            <div class="photos-section">
-                <div class="photos-grid">{{roof_pictures}}</div>
-            </div>
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true });
+}
 
-            <div class="section-header">Project <span>Terms</span></div>
-            <table>
-                <tr>
-                    <th>Item</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>Timeline</td>
-                    <td>{{timeline}}</td>
-                </tr>
-                <tr>
-                    <td>Payment Terms</td>
-                    <td>{{payment_terms}}</td>
-                </tr>
-                <tr>
-                    <td>Warranty</td>
-                    <td>{{warranty_options}}</td>
-                </tr>
-            </table>
+const app = express();
+app.use(express.json());
+app.use('/files', express.static(publicDir));
 
-            <div class="pricing-block">
-                <h3>Estimated Project Total</h3>
-                <div class="price">{{total_price}}</div>
-                <p>Valid until {{quote_valid_until}}</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+const port = process.env.PORT || 3000;
+const verifyToken = process.env.VERIFY_TOKEN;
+const waToken = process.env.WA_TOKEN;
+const waPhoneId = process.env.WA_PHONE_ID;
+const geminiApiKey = process.env.GEMINI_API_KEY;
+
+const userSessions = new Map();
+
+const DEFAULT_STATE = {
+  customer_name_and_address: null,
+  building_stories: null,
+  scope_of_work: null,
+  materials_current_and_new: null,
+  root_cause: null,
+  site_notes: null,
+  insurance_or_retail: null,
+  add_ons_and_contingencies: null,
+  total_price: null,
+  timeline: null,
+  payment_terms: null,
+  warranty_options: null
+};
+
+// UPDATED INSTRUCTION: Extreme brevity, 1 question at a time, explicit photo requests
+const getSystemInstruction = (contractorName) => `
+You are an AI estimating assistant for a roofing contractor named ${contractorName}.
+
+TONE & PACING (CRITICAL):
+- Act like you are sending a quick SMS text message. Be EXTREMELY brief, friendly, and efficient.
+- Max 1 to 2 short sentences per reply. Do not ramble.
+- You MUST ask ONLY ONE question at a time. Never bombard them with multiple questions.
+
+LANGUAGE RULE:
+- If ${contractorName} speaks in Spanish, reply in Spanish. 
+- ALL data extracted into the "collected_data" JSON MUST be translated into professional English.
+
+GOAL: Collect these 12 pieces of text information:
+1. customer_name_and_address (REQUIRED)
+2. building_stories
+3. scope_of_work (REQUIRED)
+4. materials_current_and_new
+5. root_cause
+6. site_notes
+7. insurance_or_retail
+8. add_ons_and_contingencies
+9. total_price (REQUIRED)
+10. timeline
+11. payment_terms
+12. warranty_options
+
+PICTURE RULE:
+- Pay attention to "photos_uploaded" in the prompt data. If it is 0, you must explicitly ask them to upload photos of the roof at some point during the chat.
+
+CONVERSATION RULES:
+- Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
+- Extract any details they provide into "collected_data". 
+- POST-QUOTE EDITS: If they correct a detail AFTER the quote was generated, update the value, acknowledge the change briefly, and set "is_complete": true so the system rebuilds the file.
+- GENERATE QUOTE: If they ask to skip or generate the quote, check the 3 REQUIRED fields. If any are missing, politely refuse and ask for the missing ones. If they are present, set "is_complete": true.
+`;
+
+async function downloadWhatsAppImage(mediaId) {
+  try {
+    const res = await fetch(`https://graph.facebook.com/v26.0/${mediaId}`, {
+      headers: { 'Authorization': `Bearer ${waToken}` }
+    });
+    const data = await res.json();
+    if (!data.url) throw new Error("No media URL returned by Meta");
+
+    const imgRes = await fetch(data.url, {
+      headers: { 'Authorization': `Bearer ${waToken}` }
+    });
+    const buffer = await imgRes.arrayBuffer();
+    
+    const fileName = `img_${mediaId}.jpg`;
+    fs.writeFileSync(path.join(publicDir, fileName), Buffer.from(buffer));
+    return fileName;
+  } catch (err) {
+    console.error("❌ Media download error:", err);
+    return null;
+  }
+}
+
+app.get('/', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const challenge = req.query['hub.challenge'];
+  const token = req.query['hub.verify_token'];
+
+  if (mode === 'subscribe' && token === verifyToken) {
+    res.status(200).send(challenge);
+  } else {
+    res.status(403).end();
+  }
+});
+
+app.post('/', async (req, res) => {
+  res.status(200).send('EVENT_RECEIVED');
+
+  const value = req.body.entry?.[0]?.changes?.[0]?.value || req.body.value;
+  const message = value?.messages?.[0];
+  const contacts = value?.contacts?.[0];
+  
+  if (!message) return;
+
+  const senderProfileName = contacts?.profile?.name || 'Contractor';
+  const senderPhone = message.from;
+  let incomingText = "";
+
+  if (!userSessions.has(senderPhone)) {
+    userSessions.set(senderPhone, {
+      contractorName: senderProfileName,
+      data: { ...DEFAULT_STATE },
+      images: [], 
+      isComplete: false,
+      quoteNumber: `Q-${Math.floor(100000 + Math.random() * 900000)}` 
+    });
+  }
+  const session = userSessions.get(senderPhone);
+
+  if (message.type === 'text') {
+    incomingText = message.text.body;
+    console.log(`💬 Text from ${senderProfileName}: ${incomingText}`);
+  } else if (message.type === 'image') {
+    console.log(`📸 Image received from ${senderProfileName}. Downloading...`);
+    const savedFileName = await downloadWhatsAppImage(message.image.id);
+    
+    if (savedFileName) {
+      session.images.push(savedFileName);
+      const caption = message.image.caption ? ` Caption: "${message.image.caption}"` : "";
+      incomingText = `[System Note: The contractor just uploaded a roof photo.${caption}]`;
+    } else {
+      incomingText = `[System Note: The contractor tried to upload a photo, but the download failed.]`;
+    }
+  } else {
+    return; 
+  }
+
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiApiKey}`;
+    let geminiData = null;
+    let attempt = 0;
+    const maxAttempts = 3;
+
+    while (attempt < maxAttempts) {
+      const geminiResponse = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: getSystemInstruction(session.contractorName) }] },
+          contents: [
+            {
+              role: 'user',
+              // Pass the current photo count so the AI knows if it needs to ask for pictures
+              parts: [{ text: JSON.stringify({ 
+                current_state: session.data, 
+                photos_uploaded: session.images.length,
+                incoming_message: incomingText 
+              }) }]
+            }
+          ],
+          generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1
+          }
+        })
+      });
+
+      geminiData = await geminiResponse.json();
+
+      if (geminiData.error && geminiData.error.code === 503) {
+        attempt++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        break;
+      }
+    }
+
+    let rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!rawAiOutput) return;
+
+    rawAiOutput = rawAiOutput.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(rawAiOutput);
+    
+    session.data = { ...session.data, ...parsed.collected_data };
+    session.isComplete = Boolean(parsed.is_complete);
+
+    if (session.isComplete) {
+      const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
+      const host = req.get('host');
+      const quoteNumber = session.quoteNumber;
+
+      let imageHtmlBlock = session.images.length > 0 
+        ? session.images.map(img => `<img src="https://${host}/files/${img}" style="width:100%; max-width:250px; border-radius:8px; margin-bottom:10px; display:block;" alt="Roof condition photo"/>`).join('')
+        : 'No photos logged';
+
+      const fullQuoteData = {
+        quote_number: quoteNumber,
+        quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        quote_valid_until: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        
+        customer_name_and_address: formatField(session.data.customer_name_and_address, 'Client Details Pending'),
+        building_stories: formatField(session.data.building_stories, 'Not specified'),
+        scope_of_work: formatField(session.data.scope_of_work, 'Pending evaluation'),
+        materials_current_and_new: formatField(session.data.materials_current_and_new, 'TBD upon inspection'),
+        root_cause: formatField(session.data.root_cause, 'Not specified'),
+        site_notes: formatField(session.data.site_notes, 'None'),
+        insurance_or_retail: formatField(session.data.insurance_or_retail, 'Standard Retail'),
+        add_ons_and_contingencies: formatField(session.data.add_ons_and_contingencies, 'None specified'),
+        total_price: formatField(session.data.total_price, 'TBD after physical inspection'),
+        timeline: formatField(session.data.timeline, 'TBD'),
+        payment_terms: formatField(session.data.payment_terms, 'Standard terms apply'),
+        warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty'),
+        
+        roof_pictures: imageHtmlBlock 
+      };
+
+      const companyDefaults = {
+        company_name: "Stuv Creations Estimating",
+        company_tagline: "Contractor Intake & Proposal Generation",
+        company_phone: "(555) 555-0199",
+        company_email: "estimates@stuvcreations.com",
+        company_address: "Cape Coral, FL"
+      };
+
+      const merged = { ...companyDefaults, ...fullQuoteData };
+      const templatePath = path.join(__dirname, 'roof-quote-template.html');
+      const rawTemplate = fs.readFileSync(templatePath, 'utf8');
+      
+      const finalHtml = rawTemplate.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
+
+      const fileName = `Roof_Quote_${quoteNumber}.html`;
+      fs.writeFileSync(path.join(publicDir, fileName), finalHtml, 'utf8');
+
+      const fileUrl = `https://${host}/files/${fileName}`;
+
+      await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready:\n${fileUrl}`);
+      await sendWhatsAppDocument(senderPhone, fileUrl, fileName, `Estimate Proposal ${quoteNumber}`);
+      
+      session.isComplete = false;
+      return;
+    }
+
+    // UPDATED: Calculate progress perfectly in the background and append it to the text
+    let replyText = parsed.customer_reply;
+    const filledFields = Object.values(session.data).filter(val => val !== null && val !== 'skipped').length;
+    const progressPct = Math.round((filledFields / 12) * 100);
+    
+    replyText += `\n\n📊 ${progressPct}% | ${filledFields}/12`;
+
+    await sendWhatsAppMessage(senderPhone, replyText);
+
+  } catch (err) {
+    console.error('❌ Processing error:', err);
+  }
+});
+
+async function sendWhatsAppMessage(to, text) {
+  try {
+    await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text', text: { body: text } })
+    });
+  } catch (err) {}
+}
+
+async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
+  try {
+    await fetch(`https://graph.facebook.com/v26.0/${waPhoneId}/messages`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to,
+        type: 'document',
+        document: { link: fileUrl, filename: fileName, caption }
+      })
+    });
+  } catch (err) {}
+}
+
+app.listen(port, () => console.log(`Server running on port ${port}`));
