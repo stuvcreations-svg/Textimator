@@ -43,12 +43,23 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const COMPANY_NAME = process.env.COMPANY_NAME || '';       // e.g. "Top Elite Roofing"
 const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || ''; // optional
 const REP_NAME = process.env.REP_NAME || '';               // optional
+// Default look of the report: auto (follows the customer's device), day, dark or blush.
+// The customer can still switch it with the buttons on the page.
+const REPORT_THEME = process.env.REPORT_THEME || 'auto';
+const THEMES = ['auto', 'day', 'dark', 'blush'];
+const THEME_ALIAS = { woman: 'blush', rose: 'blush', pink: 'blush', light: 'day' };
+const themeOf = (v) => {
+  const raw = String(v || '').toLowerCase().trim();
+  const t = THEME_ALIAS[raw] || raw;
+  return THEMES.includes(t) ? t : null;
+};
 
 const userSessions = new Map();
 
 // 2. Data structure: the 12 fields the report needs
 const DEFAULT_STATE = {
   customer_name_and_address: null,
+  job_type: null,
   roof_area_sqft: null,
   building_stories: null,
   current_roof_and_condition: null,
@@ -56,12 +67,26 @@ const DEFAULT_STATE = {
   good_option: null,
   better_option: null,
   best_option: null,
+  repair_items_and_prices: null,
+  repair_warranty: null,
   discount: null,
   add_ons_and_contingencies: null,
   timeline: null,
-  measurement_report: null
+  measurement_report: null,
+  report_theme: null // optional, never asked: day | dark | blush
 };
-const TOTAL_FIELDS = Object.keys(DEFAULT_STATE).length;
+// "repair" or "replacement" (default). The contractor chooses; the model only records it.
+const jobTypeOf = (data) =>
+  /repair/i.test(data.job_type || '') && !/replac/i.test(data.job_type || '') ? 'repair' : 'replacement';
+
+// Fields that count toward the progress counter for this job type
+function relevantKeys(data) {
+  const skip = jobTypeOf(data) === 'repair'
+    ? ['good_option', 'better_option', 'best_option']
+    : ['repair_items_and_prices', 'repair_warranty'];
+  skip.push('report_theme');
+  return Object.keys(DEFAULT_STATE).filter((k) => !skip.includes(k));
+}
 
 // ==========================================
 // 3. AI SYSTEM INSTRUCTIONS (TONE & RULES)
@@ -78,29 +103,39 @@ LANGUAGE RULE:
 - If ${contractorName} speaks in Spanish, you MUST reply in Spanish.
 - However, ALL data extracted into the "collected_data" JSON MUST be translated into professional English for the final report.
 
-YOUR MISSION: Collect these 12 pieces of information:
+YOUR MISSION: Collect the pieces of information below. Ask about the job type right after the customer name and address.
 1. customer_name_and_address (REQUIRED - homeowner name plus the full property address with city, state and zip)
-2. roof_area_sqft (REQUIRED - total roof area in square feet, exactly as the contractor states it. Never estimate it)
-3. building_stories (e.g., one story, garage attached)
-4. current_roof_and_condition (e.g., 20-year-old shingles, worn through to the mat)
-5. site_notes (e.g., leaks reported, access restrictions, dogs in yard)
-6. good_option (REQUIRED - shingle brand and line, price, labor/material warranty years)
-7. better_option (REQUIRED - same details, BETTER tier)
-8. best_option (REQUIRED - same details, BEST tier)
-9. discount (e.g., 5% medical professional, applied to every tier. Use "none" if there is none)
-10. add_ons_and_contingencies (e.g., replace up to 20% damaged wood; any change to standard terms such as deposit)
-11. timeline (e.g., Up to 7 days)
-12. measurement_report (pitch, facets and linear feet, only if the contractor has a measurement report. Use "skipped" if not)
+2. job_type (REQUIRED - exactly "replacement" for a full roof replacement, or "repair" for repairs only. Ask: "Is this a full replacement or a repair?")
+3. roof_area_sqft (REQUIRED - total roof area in square feet, exactly as the contractor states it. Never estimate it)
+4. building_stories (e.g., one story, garage attached)
+5. current_roof_and_condition (e.g., 20-year-old shingles, worn through to the mat)
+6. site_notes (e.g., leaks reported, access restrictions, dogs in yard)
+FOR REPLACEMENT JOBS ONLY:
+7. good_option (REQUIRED - the exact shingle brand AND product line, the price, the labor/material warranty in years, AND the manufacturer's warranty, e.g. "GAF Timberline HDZ, $20,000, 5-year labor warranty, GAF limited lifetime")
+8. better_option (REQUIRED - same four details, BETTER tier)
+9. best_option (REQUIRED - same four details, BEST tier)
+FOR REPAIR JOBS ONLY:
+10. repair_items_and_prices (REQUIRED - each repair the contractor will do with its price, or one total price for all the work, e.g. "replace 12 ridge shingles $650; reseal two pipe boots $300")
+11. repair_warranty (workmanship warranty in years for the repairs. Use "skipped" if none)
+FOR BOTH:
+12. discount (e.g., 5% medical professional, applied to the whole price. Use "none" if there is none)
+13. add_ons_and_contingencies (e.g., replace up to 20% damaged wood; payment terms if not standard, such as payment on completion or a different deposit)
+14. timeline (e.g., Up to 7 days)
+15. measurement_report (pitch, facets and linear feet, only if the contractor has a measurement report. Use "skipped" if not)
 
-The report always shows three tiers (Good, Better, Best). If the contractor gives only one price, ask for the other two, one at a time.
+A replacement report always shows three tiers (Good, Better, Best). If the contractor gives only one price for a replacement, ask for the other two, one at a time.
+For a repair, never ask about tiers or shingle warranties.
 Never invent prices, measurements or warranty terms. Store exactly what the contractor says.
+If they name only a brand ("GAF shingles"), ask which exact product line. If they give no manufacturer warranty for a tier, ask for it. Never guess either one.
+
+report_theme (OPTIONAL. NEVER ask about it. Only if the contractor asks for a look for the report, store exactly "day", "dark" or "blush"; if they say "rose", "pink" or "woman", store "blush")
 
 BEHAVIOR PROTOCOLS:
 - RETURN FORMAT: Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
 - PROGRESSION: Naturally acknowledge their answer, extract it to "collected_data", and ask for the very next missing field on the list.
 - PICTURE RULE: Check "photos_uploaded" in the user prompt. If it is 0, explicitly ask them to snap pictures of the roof (the report is built from the photos, so more is better). If > 0, acknowledge the photo naturally.
-- REQUIRED FIELDS & SKIPPING: If they say "skip the rest" or "generate quote", check the 5 REQUIRED fields (1, 2, 6, 7, 8) and that at least one photo is uploaded. If anything is missing, politely refuse and ask for it. If all are present, set "is_complete": true.
-- POST-QUOTE EDITS: If they correct a detail AFTER the quote was generated (e.g., "Actually, change the Better price to $26k"), update the value, acknowledge the change briefly, and set "is_complete": true so the system rebuilds the report.
+- REQUIRED FIELDS & SKIPPING: If they say "skip the rest" or "generate quote", check the REQUIRED fields (name and address, job type, roof area, and either the three options for a replacement or the repair items and prices for a repair) and that at least one photo is uploaded. If anything is missing, politely refuse and ask for it. If all are present, set "is_complete": true.
+- POST-QUOTE EDITS: If they correct a detail AFTER the quote was generated (e.g., "Actually, change the Better price to $26k"), update the value, acknowledge the change briefly, and set "is_complete": true so the system rebuilds the report. This includes a request to change the report's look ("make it dark").
 `;
 // ==========================================
 
@@ -183,6 +218,12 @@ function finalizeReportData(d, session) {
   d.meta.rep = REP_NAME;
   d.meta.date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   d.meta.dateLabel = d.meta.dateLabel || 'Report date';
+  // The contractor's answer decides the job type, not the model
+  d.meta.theme = themeOf(session.data.report_theme) || themeOf(REPORT_THEME) || 'auto';
+  d.meta.jobType = jobTypeOf(session.data);
+  d.meta.product = d.meta.jobType === 'repair' ? 'Roof repair' : 'Shingle roof replacement';
+  if (d.meta.jobType === 'repair') d.options = [];
+  else delete d.repair;
 
   // Embed each photo INSIDE the report file (data URI), so the report is self-contained
   // and photos always show, wherever and however the file is opened.
@@ -199,6 +240,26 @@ function finalizeReportData(d, session) {
   if (d.readingSet && d.readingSet.photoId) {
     d.readingSet.photoSrc = srcById[photoNumber(d.readingSet.photoId)] || '';
   }
+  // Cover background: the builder picks one of the contractor's photos (widest shot of the shingles).
+  // If it is already used by a finding or the overview, the template reuses it without copying the data.
+  const usedIds = new Set(
+    [...(d.findings || []).map((f) => photoNumber(f.photoId)), d.readingSet && photoNumber(d.readingSet.photoId)].filter(Boolean)
+  );
+  const coverId = photoNumber(d.meta.coverPhotoId);
+  delete d.meta.coverPhotoSrc;
+  if (coverId && srcById[coverId]) {
+    if (!usedIds.has(coverId)) d.meta.coverPhotoSrc = srcById[coverId];
+  } else {
+    delete d.meta.coverPhotoId; // the template falls back to the first finding's photo
+  }
+  const distinct = new Set((d.findings || []).map((f) => photoNumber(f.photoId))).size;
+  d.flags = Array.isArray(d.flags) ? d.flags : [];
+  if (session.images.length < 3) {
+    d.flags.push(`NOTE: Only ${session.images.length} photo(s) received. Send more close-ups (flashing, vents, edges) for a fuller report.`);
+  }
+  if ((d.findings || []).length > distinct) {
+    d.flags.push('NOTE: Some findings share a photo. More photos would let each finding have its own.');
+  }
   return d;
 }
 
@@ -207,12 +268,20 @@ function missingInputs(d) {
   const M = d.meta || {};
   ['homeowner', 'addressLine1', 'addressLine2', 'areaSqFt'].forEach((k) => { if (!M[k]) m.push(`meta.${k}`); });
   if (!(d.findings || []).length) m.push('findings');
-  if ((d.options || []).length !== 3) m.push('options');
-  (d.options || []).forEach((o, i) =>
-    ['shingle', 'mfrWarranty', 'laborYears', 'listPrice'].forEach((k) => {
-      if (o[k] == null || o[k] === '') m.push(`options[${i}].${k}`);
-    })
-  );
+  if (M.jobType === 'repair') {
+    const r = d.repair || {};
+    const items = r.items || [];
+    if (!items.length) m.push('repair.items');
+    const priced = r.totalPrice != null || (items.length && items.every((x) => x.price != null));
+    if (!priced) m.push('repair.price');
+  } else {
+    if ((d.options || []).length !== 3) m.push('options');
+    (d.options || []).forEach((o, i) =>
+      ['shingle', 'mfrWarranty', 'laborYears', 'listPrice'].forEach((k) => {
+        if (o[k] == null || o[k] === '') m.push(`options[${i}].${k}`);
+      })
+    );
+  }
   return m;
 }
 
@@ -227,6 +296,8 @@ function humanizeMissing(list) {
     if (k === 'meta.addressLine1' || k === 'meta.addressLine2') return 'full property address (street, city, state, zip)';
     if (k === 'meta.areaSqFt') return 'roof area in sq ft';
     if (k === 'findings') return 'roof photos';
+    if (k === 'repair.items') return 'the repair items';
+    if (k === 'repair.price') return 'the price for the repairs';
     return k;
   });
   return out.filter((v, i, a) => a.indexOf(v) === i);
@@ -388,10 +459,11 @@ app.post('/', async (req, res) => {
 
     // Mathematical Progress Tracker
     let replyText = parsed.customer_reply;
-    const filledFields = Object.values(session.data).filter((val) => val !== null && val !== 'skipped').length;
-    const progressPct = Math.round((filledFields / TOTAL_FIELDS) * 100);
+    const keys = relevantKeys(session.data);
+    const filledFields = keys.filter((k) => session.data[k] !== null && session.data[k] !== 'skipped').length;
+    const progressPct = Math.round((filledFields / keys.length) * 100);
 
-    replyText += `\n\n📊 ${progressPct}% | ${filledFields}/${TOTAL_FIELDS}`;
+    replyText += `\n\n📊 ${progressPct}% | ${filledFields}/${keys.length}`;
 
     await sendWhatsAppMessage(senderPhone, replyText);
   } catch (err) {

@@ -7,7 +7,7 @@
 <style>
 :root{--ink:#111517;--deep:#181f22;--paper:#fbf9f6;--card:#f1eee8;--rule:#ded7cc;--slate:#727a7e;--mute:#9ba3a6;--sig:#ce4e1b;--sigbg:#faebe2;--grn:#2b6a4e;--grnbg:#e8f0eb;--amb:#b07d14;--text:#111517;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}}
 :root[data-theme="dark"]{--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
@@ -17,12 +17,12 @@ h1,h2,h3,.p{font-family:Poppins,system-ui,sans-serif}
 .lab{font:500 12px/1 Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .dark{background:var(--ink);color:#fff}
 .cover{padding:44px 0 0}
-.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:20px;padding-bottom:28px;border-bottom:1px solid #2a3135}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:20px;padding-bottom:28px;border-bottom:1px solid var(--ink-line,#2a3135)}
 .meta b{display:block;font:500 15px Poppins,sans-serif;margin-top:6px;color:#fff;text-transform:none;letter-spacing:0}
 .cover h1{font:700 clamp(40px,8vw,72px)/1.05 Poppins,sans-serif;margin:90px 0 6px}
-.cover .sub{font:300 clamp(22px,4vw,32px) Poppins,sans-serif;color:#b8bec1;margin:0}
+.cover .sub{font:300 clamp(22px,4vw,32px) Poppins,sans-serif;color:var(--ink-mute,#b8bec1);margin:0}
 .cover .kick{color:var(--sig);margin-top:90px}
-.cover p.tag{color:#c9cdcf;max-width:560px;margin:26px 0 60px}
+.cover p.tag{color:var(--ink-soft,#c9cdcf);max-width:560px;margin:26px 0 60px}
 .cover img{display:block;width:100%;height:340px;object-fit:cover;-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
 section{padding:64px 0}
 h2{font:700 38px/1.15 Poppins,sans-serif;margin:0 0 28px}
@@ -37,7 +37,7 @@ h2{font:700 38px/1.15 Poppins,sans-serif;margin:0 0 28px}
 .call h3{font:600 26px/1.25 Poppins,sans-serif;margin:10px 0}
 .call p{margin:0}
 .hero .ph{width:100%;max-height:560px;object-fit:cover;display:block}
-.hero .in{padding:32px 0 56px}
+.hero .in{padding:32px 24px 56px}
 .chip{display:inline-block;font:600 12px/1 Poppins,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#fff;padding:6px 10px;border-radius:3px;background:var(--amb)}
 .chip.s{background:var(--sig)}.chip.v{background:var(--slate)}
 .hero h2{font-size:clamp(30px,5vw,46px);color:#fff;margin:14px 0 20px}
@@ -45,7 +45,7 @@ h2{font:700 38px/1.15 Poppins,sans-serif;margin:0 0 28px}
 .sol .lab{color:var(--grn)}
 .sol ol{margin:10px 0 0;padding-left:22px;font:500 15.5px/1.5 Poppins,sans-serif}
 .sol li{margin:5px 0}
-.hero .sol{background:#1e2a25;color:#fff;--grn:#7cc9a3}
+.hero .sol{background:var(--hsol,#1e2a25);color:#fff;--grn:var(--hsolacc,#7cc9a3)}
 .prob{color:var(--sig)}
 .card{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);background:var(--card);margin-bottom:28px;border-left:0}
 .card img{width:100%;height:100%;min-height:420px;object-fit:cover;display:block}
@@ -76,7 +76,7 @@ td{padding:12px;border-bottom:1px solid var(--rule);vertical-align:top}
 footer{padding:30px 0;color:var(--mute);font:400 13px Poppins,sans-serif;border-top:1px solid var(--rule)}
 
 .noimg{background:var(--rule);color:var(--slate);display:flex;align-items:center;justify-content:center;font:500 14px Poppins,sans-serif;min-height:300px;width:100%;height:100%}
-.hero .noimg{background:#222b2f;height:340px;min-height:0}
+.hero .noimg{background:var(--noimg-ink,#222b2f);height:340px;min-height:0}
 .wide{width:100%;display:block}
 .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
 .kv div{background:var(--card);padding:14px 16px;font:400 13px Poppins,sans-serif;color:var(--slate)}
@@ -84,6 +84,41 @@ footer{padding:30px 0;color:var(--mute);font:400 13px Poppins,sans-serif;border-
 tr.tot td{font-weight:600}
 .rs p{margin:0 0 14px;max-width:820px}
 .opt .d{margin-bottom:4px}
+
+.rh{display:flex;justify-content:space-between;gap:16px;font:400 12px Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:36px}
+.gl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-top:14px}
+.gl figure{margin:0}.gl img,.gl .noimg{width:100%;height:260px;object-fit:cover;display:block;min-height:0}
+.gl figcaption{font:500 14px Poppins,sans-serif;margin-top:8px}
+.bar .on{position:relative}.bar .on::before{content:'▼';position:absolute;top:-24px;right:22%;font-size:15px;color:var(--text)}
+.opt .tag{display:inline-block;font:600 11px/1 Poppins;letter-spacing:.06em;color:#fff;background:var(--grn);padding:5px 9px;border-radius:3px;margin-bottom:12px}
+.opt.rec{background:var(--ink);color:#fff;border-color:var(--grn)}
+.opt.rec .old{color:#9ba3a6}.opt.rec .d{color:var(--hsolacc,#7cc9a3)}
+.psr{display:grid;grid-template-columns:52px 1fr auto;gap:8px 18px;padding:18px 0;border-bottom:1px solid var(--rule);font-family:Poppins,sans-serif}
+.psr .n{font:600 22px Poppins;color:var(--mute)}
+.psr b{display:block;font:600 16px/1.35 Poppins}
+.psr p{margin:4px 0 0;font:400 14.5px/1.5 Lora,serif;color:var(--slate)}
+.psr small{display:block;margin-top:6px;font:500 11px Poppins;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.inc{background:var(--paper);padding:26px 28px;margin-top:26px;font-family:Poppins,sans-serif}
+.inc ul{columns:2;column-gap:36px;margin:14px 0 0;padding-left:18px;font-size:14.5px}
+.inc li{margin:6px 0;break-inside:avoid}
+@media(max-width:640px){.inc ul{columns:1}.psr{grid-template-columns:40px 1fr}.psr .chipwrap{grid-column:2}}
+
+:root[data-theme="blush"]{--ink:#26201f;--deep:#322a28;--paper:#fcf9f7;--card:#f5eeea;--rule:#e6dbd4;--slate:#7a6f6b;--mute:#a39793;--sig:#ad5650;--sigbg:#f8ece9;--grn:#4f7a68;--grnbg:#eaf0ec;--amb:#b58a45;--text:#2a2322;--ink-line:#3d3532;--ink-mute:#cbbfba;--ink-soft:#d8cdc8;--hsol:#322a28;--hsolacc:#e3b9ad;--noimg-ink:#312927;--kick:#e39a8f}
+.cover .kick{color:var(--kick,var(--sig))}.hero .prob{color:var(--kick,var(--sig))}
+.tsw{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;gap:2px;background:var(--card);border:1px solid var(--rule);border-radius:999px;padding:3px;box-shadow:0 4px 18px rgba(0,0,0,.18);font:500 12px Poppins,sans-serif}
+.tsw button{border:0;background:transparent;color:var(--slate);padding:7px 12px;border-radius:999px;font:inherit;cursor:pointer}
+.tsw button[aria-pressed="true"]{background:var(--text);color:var(--paper)}
+@media print{.tsw{display:none}}
+
+.cover{position:relative;min-height:min(100svh,880px);padding:0;overflow:hidden;display:flex;flex-direction:column}
+.cover.nophoto{min-height:0;padding-bottom:88px;border-bottom:4px solid var(--sig)}
+.cover .bgimg{position:relative;flex:1 1 0;min-height:300px;width:100%;height:auto;object-fit:cover;object-position:center 40%;-webkit-mask-image:linear-gradient(transparent 0%,#000 45%);mask-image:linear-gradient(transparent 0%,#000 45%)}
+.cover .cw{position:relative;z-index:1;width:100%;flex:0 0 auto;padding-top:40px}
+.cover .ct{padding-top:clamp(48px,10vh,110px);max-width:760px}
+.cover .kick{margin-top:0}
+.cover h1{margin:16px 0 8px}
+.cover p.tag{margin:22px 0 0}
+@media(max-width:560px){.meta{grid-template-columns:1fr 1fr;gap:16px 12px;padding-bottom:20px}.cover .cw{padding-top:28px}.cover .ct{padding-top:40px}.cover .bgimg{min-height:340px}}
 </style></head>
 <body><div id="app"></div>
 <!-- DATA BLOCK: the WhatsApp app replaces the JSON in this tag, or sets window.REPORT_DATA before load, or calls renderReport(data) / postMessage(data). -->
@@ -176,22 +211,28 @@ const cap=s=>String(s||'').charAt(0)+String(s||'').slice(1).toLowerCase();
 const pic=(src,id,alt,cls)=>src?`<img ${cls?`class="${cls}" `:''}src="${esc(src)}" alt="${esc(alt)}">`:`<div class="noimg ${cls||''}">Photo ${esc(id)}</div>`;
 const list=a=>Array.isArray(a)?a:(a?[a]:[]);
 
-function prices(d){return (d.options||[]).map(o=>{const L=num(o.listPrice);const p=(L!=null&&d.discount)?Math.round(L*(1-d.discount.pct/100)):L;return{L,p,disc:(L!=null&&p!=null)?L-p:null}})}
+function repairTotal(d){const r=d.repair||{};if(num(r.totalPrice)!=null)return num(r.totalPrice);const it=r.items||[];return it.length&&it.every(x=>num(x.price)!=null)?it.reduce((s,x)=>s+num(x.price),0):null}
+function prices(d){const src=(d.meta&&d.meta.jobType==='repair')?[{listPrice:repairTotal(d)}]:(d.options||[]);return src.map(o=>{const L=num(o.listPrice);const p=(L!=null&&d.discount)?Math.round(L*(1-d.discount.pct/100)):L;return{L,p,disc:(L!=null&&p!=null)?L-p:null}})}
 
 function validate(d){const m=[],M=d.meta||{};
 ['company','homeowner','addressLine1','addressLine2','date','areaSqFt'].forEach(k=>{if(!M[k])m.push('meta.'+k)});
 if(!(d.findings||[]).length)m.push('findings');
-if((d.options||[]).length!==3)m.push('options (need 3)');
-(d.options||[]).forEach((o,i)=>['shingle','mfrWarranty','laborYears','listPrice'].forEach(k=>{if(o[k]==null||o[k]==='')m.push(`options[${i}].${k}`)}));
+if(M.jobType==='repair'){if(!((d.repair||{}).items||[]).length)m.push('repair.items');if(repairTotal(d)==null)m.push('repair.price')}else{if((d.options||[]).length!==3)m.push('options (need 3)');
+(d.options||[]).forEach((o,i)=>['shingle','mfrWarranty','laborYears','listPrice'].forEach(k=>{if(o[k]==null||o[k]==='')m.push(`options[${i}].${k}`)}));}
 return m}
 
 function render(d){
  const M=d.meta||{},F=d.findings||[],O=d.options||[],MS=d.measurements,R=d.scopeRefs||{};
- const T=Object.assign({deposit:1000,validityDays:30,timelineDays:7,woodPct:20},d.terms);
+ const REPAIR=(M.jobType==='repair');
+ const T=Object.assign({deposit:1000,depositPct:null,validityDays:30,timelineDays:REPAIR?null:7,woodPct:20,paymentMode:REPAIR?'on_completion':'standard'},d.terms);
+ const POC=T.paymentMode==='on_completion',DB=T.paymentMode==='deposit_balance';
+ const dep=p=>T.depositPct!=null?Math.round(p*T.depositPct/100):T.deposit;
  const co=esc(M.company),A=(num(M.areaSqFt)||0).toLocaleString('en-US')+' sq ft',PR=prices(d),D=d.discount,V=d.verdict||{};
  const strip=s=>esc(String(s||'').replace(/ manufacturer warranty$/,''));
  const tiers=['Good','Better','Best'],A1=esc(M.addressLine1),A2=esc(M.addressLine2);
- const photos=F.length+(d.readingSet&&d.readingSet.photoId?1:0);
+ const cols=REPAIR?['Amount']:tiers;
+ const photos=new Set([...F.map(f=>f.photoId),d.readingSet&&d.readingSet.photoId].filter(Boolean).map(String)).size;
+ const rh=t=>`<div class="rh"><span>${A1} · ${t}</span><span>${co}</span></div>`;
  const roofBit=M.pitch?`${esc(M.pitch)} pitch`:esc(M.roofDescriptor||'');
  const st=(b,s,sm)=>`<div><b>${b}</b><span>${s}</span><small>${sm}</small></div>`;
  const stats=MS?st(photos,'roof photographs','every problem shown')+st(A.replace(' sq ft',''),'sq ft of roof',esc(M.measureSource||''))+st(esc(M.pitch||'—'),'predominant pitch',`${esc(M.facets||'—')} roof facets`)
@@ -199,24 +240,28 @@ function render(d){
  const cond=({serviceable:0,monitor:1,end_of_life:2})[V.condition]??2;
  const bar=['Serviceable','Monitor','End of life'].map((x,i)=>`<div class="${i==cond?'on':''}"><i></i>${x}</div>`).join('');
  const h=F[0]||{};
+ const usedG=new Set([String(h.photoId)]);
+ let gl=(d.glance&&d.glance.length?d.glance.map(n=>F[n-1]):F.slice(1)).filter(f=>f&&f!==h);
+ gl=gl.filter(f=>{const k=String(f.photoId);if(usedG.has(k))return false;usedG.add(k);return true}).slice(0,3);
+ const glance=gl.length?`<div class="lab" style="margin-top:8px">What the photographs show</div><div class="gl">${gl.map(f=>`<figure>${pic(f.photoSrc,f.photoId,f.title)}<figcaption>${esc(f.caption||f.title)}</figcaption></figure>`).join('')}</div>`:'';
  const hp=Array.isArray(h.problem)?`<ul style="color:#d5d8da;padding-left:20px">${h.problem.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p style="color:#d5d8da;max-width:760px">${esc(h.problem)}</p>`;
  const sol=a=>`<div class="sol"><div class="lab" style="margin:0">The solution</div><ol>${list(a).map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
  const hero=F.length?`<section class="dark hero" style="padding:0">${pic(h.photoSrc,h.photoId,h.title,'ph')}<div class="w in"><span class="lab">Finding 1 · Photo ${esc(h.photoId)}</span> <span class="chip ${sc(h.severity)}" style="margin-left:10px">${esc(cap(h.severity))}</span><h2>${esc(h.title)}</h2><div class="lab prob">The problem</div>${hp}${sol(h.solution)}</div></section>`:'';
  const cards=F.slice(1).map((f,i)=>{const n=i+2;return`<article class="card">${pic(f.photoSrc,f.photoId,f.title)}<div class="b ${sc(f.severity)}"><span class="num">${String(n).padStart(2,'0')}</span><span class="chip ${sc(f.severity)}">${esc(f.severity)}</span><span class="ref">Finding ${n} · Photo ${esc(f.photoId)}</span><h3>${esc(f.title)}</h3><span class="lab">The problem</span><ul>${list(f.problem).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${sol(f.solution)}</div></article>`}).join('');
- const RS=d.readingSet,rs=RS?`<section><div class="w rs"><h2>Reading the set as a whole</h2>${(RS.groups||[]).map(g=>`<p><b class="p">${esc(g.name)}</b> ${esc(g.text)} ${esc(g.refs)}.</p>`).join('')}${RS.photoId?`<figure style="margin:28px 0 0">${pic(RS.photoSrc,RS.photoId,RS.caption,'wide')}<figcaption class="ref">${esc(RS.photoLabel||'Overview')} · Photo ${esc(RS.photoId)}</figcaption><p style="color:var(--slate);margin:6px 0 0">${esc(RS.caption)}</p></figure>`:''}</div></section>`:'';
- const rows=(d.problemsTable&&d.problemsTable.length?d.problemsTable:F.map(f=>({problem:f.title,solution:list(f.solution)[0],refs:String(F.indexOf(f)+1),severity:f.severity}))).concat([{problem:'How far the deck damage runs',solution:`Inspected at tear-off; damaged wood shown and replaced.`,refs:'At tear-off',severity:'VERIFY'}]);
- const ps=`<table><tr><th>Problem</th><th>Solution</th><th>Findings</th><th>Level</th></tr>${rows.map(r=>`<tr><td>${esc(r.problem)}</td><td>${esc(r.solution)}</td><td>${esc(r.refs)}</td><td>${esc(cap(r.severity))}</td></tr>`).join('')}</table>`;
+ const RS=(d.readingSet&&F.length>=3&&(d.readingSet.groups||[]).length)?d.readingSet:null,rs=RS?`<section><div class="w rs">${rh('Reading the set as a whole')}<h2>Reading the set as a whole</h2>${(RS.groups||[]).map(g=>`<p><b class="p">${esc(g.name)}</b> ${esc(g.text)} ${esc(g.refs)}.</p>`).join('')}${RS.photoId&&!F.some(f=>String(f.photoId)==String(RS.photoId))?`<figure style="margin:28px 0 0">${pic(RS.photoSrc,RS.photoId,RS.caption,'wide')}<figcaption class="ref">${esc(RS.photoLabel||'Overview')} · Photo ${esc(RS.photoId)}</figcaption><p style="color:var(--slate);margin:6px 0 0">${esc(RS.caption)}</p></figure>`:''}</div></section>`:'';
+ const rows=(d.problemsTable&&d.problemsTable.length?d.problemsTable:F.map(f=>({problem:f.title,solution:list(f.solution)[0],refs:String(F.indexOf(f)+1),severity:f.severity}))).concat([REPAIR?{problem:'Hidden damage under the repaired areas',solution:'Checked as each repair is opened; anything found is shown to you and priced first.',refs:'When opened',severity:'VERIFY'}:{problem:'How far the deck damage runs',solution:`Inspected at tear-off; damaged wood shown and replaced.`,refs:'At tear-off',severity:'VERIFY'}]);
+ const ps=rows.map((r,i)=>`<div class="psr"><div class="n">${String(i+1).padStart(2,'0')}</div><div><b>${esc(r.problem)}</b><p>${esc(r.solution)}</p><small>${/^\d/.test(r.refs)?'Findings '+esc(r.refs):esc(r.refs)}</small></div><div class="chipwrap"><span class="chip ${sc(r.severity)}">${esc(r.severity)}</span></div></div>`).join('');
  const ms=MS?`<section><div class="w"><h2>Your roof, measured</h2><p>Measured by ${esc(M.measureSource)} from aerial imagery, ${esc(M.measureDate)}. Every quantity in the pricing comes from these figures.</p><div class="kv">${[['Roof area',A],['Roof facets',M.facets],['Predominant pitch',M.pitch],['Ridges',ft(MS.ridges)],['Hips',ft(MS.hips)],['Valleys',ft(MS.valleys)],['Rakes',ft(MS.rakes)],['Eaves',ft(MS.eaves)],['Bends',ft(MS.bends)],['Drip edge',ft(MS.drip)],['Step flashing',ft(MS.step)],['Other flashing',ft(MS.flash)]].map(([k,v])=>`<div><b>${esc(v==null?'—':v)}</b>${k}</div>`).join('')}</div></div></section>`:'';
  const caps=MS?(num(MS.hips)||0)+(num(MS.ridges)||0):null;
  const inc=[ 'Tear-off of all existing layers to the deck',`New shingles, ${A}`,`Damaged deck wood replaced as needed, up to ${T.woodPct}%`,'Synthetic underlayment',MS?`New drip edge, ${ft(MS.drip)}`:'New drip edge at every eave and rake',MS?`New valley lining, ${ft(MS.valleys)}`:'New valley lining',MS?`New step flashing, ${ft(MS.step)}`:'New flashing at walls and vents',MS?`New hip and ridge caps, ${ft(caps)}`:'New hip and ridge caps throughout','New flashed boots at every pipe','Manufacturer warranty on materials','Job complete in up to '+T.timelineDays+' days','Clean-up and magnetic nail sweep'];
- const opts=O.map((o,i)=>`<div class="opt ${i==1?'rec':''}"><h3>${tiers[i].toUpperCase()}${i==1?' · RECOMMENDED':''}</h3>${D?`<div class="old">${money(PR[i].L)}</div>`:''}<div class="pr">${money(PR[i].p)}</div>${D?`<div class="d">−${esc(D.pct)}% ${esc(D.name)}</div>`:''}<ul><li>${esc(o.laborYears)}-year warranty</li><li>${esc(o.shingle)} shingles</li><li>${esc(o.laborYears)}-year labor and material warranty</li><li>${esc(o.mfrWarranty)}</li></ul></div>`).join('');
+ const opts=O.map((o,i)=>`<div class="opt ${i==1?'rec':''}">${i==1?'<span class="tag">RECOMMENDED</span>':''}<h3>${tiers[i].toUpperCase()}</h3>${D?`<div class="old">${money(PR[i].L)}</div>`:''}<div class="pr">${money(PR[i].p)}</div>${D?`<div class="d">−${esc(D.pct)}% ${esc(D.name)}</div>`:''}<ul><li>${esc(o.laborYears)}-year warranty</li><li>${esc(o.shingle)} shingles</li><li>${esc(o.laborYears)}-year labor and material warranty</li><li>${esc(o.mfrWarranty)}</li><li>The full scope listed below</li></ul></div>`).join('');
  const r=k=>esc(R[k]||'—'),Y='Included',X='–';
  const line=(a,q,f,c)=>[a,q,f].concat(c||[Y,Y,Y]);
  const sh=i=>[0,1,2].map(j=>j==i?Y:X);
  const it=[line('Tear-off of all existing layers to the deck',A,r('tearoff')),line(`Deck inspection; damaged wood replaced as needed, up to ${T.woodPct}% of the deck`,`As needed, up to ${T.woodPct}%`,r('deck')),line('Synthetic underlayment',A,r('underlayment')),line('New drip edge at all eaves and rakes',MS?ft(MS.drip):'Full perimeter',r('drip')),line('Starter strip at eaves and rakes',MS?ft(MS.drip):'Full perimeter','—'),line('New valley lining',MS?ft(MS.valleys):'Every valley',r('valley'))]
   .concat(MS?[line('New step flashing and counter-flashing at walls',ft(MS.step),r('flashing')),line('Other wall and penetration flashing',ft(MS.flash),r('flashing'))]:[line('New wall and vent flashing','Every junction',r('flashing'))])
   .concat([line('New flashed pipe boots and duct collars (no mastic)','Every penetration',r('boots'))],O.map((o,i)=>line(`${esc(o.shingle)} shingles`,A,r('shingles'),sh(i))),
-  [line('Matching hip and ridge caps',MS?ft(caps):'All hips and ridges',r('caps')),line('Clean-up, haul-away, magnetic nail sweep','Whole site','—'),line('Final inspection before last payment','—','—'),
+  [line('Matching hip and ridge caps',MS?ft(caps):'All hips and ridges',r('caps')),line('Clean-up, haul-away, magnetic nail sweep','Whole site','—'),line(POC?'Final inspection before payment':'Final inspection before last payment','—','—'),
    line(`Manufacturer warranty on materials`,'—','—',O.map(o=>esc(o.mfrShort||'—'))),line(`${co} warranty, labor and material`,'—','—',O.map(o=>esc(o.laborYears)+' yrs'))]);
  const itab=`<table><tr><th>#</th><th>Item</th><th>Quantity</th><th>Findings</th><th>Good</th><th>Better</th><th>Best</th></tr>${it.map((x,i)=>`<tr><td>${i+1}</td><td>${x[0]}</td>${x.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}${D?`<tr class="tot"><td></td><td>List price</td><td></td><td></td>${PR.map(p=>`<td>${money(p.L)}</td>`).join('')}</tr><tr><td></td><td>${esc(cap(D.name))} discount (${esc(D.pct)}%)</td><td></td><td></td>${PR.map(p=>`<td>${p.disc==null?'$ —':'−'+money(p.disc)}</td>`).join('')}</tr>`:''}<tr class="tot"><td></td><td>${D?'Your price':'Price'}</td><td></td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
  const q=[['Will you remove every existing layer, down to the deck?','Yes. All layers come off and the deck is inspected before anything goes back.'],['What happens if the deck is damaged?',`Replacing up to ${T.woodPct}% of the deck is already in the price. Anything beyond that is shown to you and priced before it is done.`],
@@ -224,26 +269,55 @@ function render(d){
   ['Will pipes and ducts be sealed with cement?','No. Every penetration gets new flashing or a collar.'],['Are the drip edge and flashings new, or reused?',MS?`New, in every option: ${ft(MS.drip)} of drip edge, ${ft(MS.step)} of step flashing.`:'New, in every option.'],
   ['Which shingle, and who backs it?',O.length==3?`${esc(O[0].shingle)} (Good), ${esc(O[1].shingle)} with a ${strip(O[1].mfrWarranty)} warranty (Better), or ${esc(O[2].shingle)} (Best).`:'—'],
   ['Who backs the workmanship, and for how long?',O.length==3?`${co}: ${esc(O[0].laborYears)}, ${esc(O[1].laborYears)} or ${esc(O[2].laborYears)} years on labor and material, depending on the option.`:'—'],
-  ['How much do you need before work starts?',`${money(T.deposit)} at signing, credited to the job. Nothing more until demolition begins.`],['How long will the job take?',`Up to ${T.timelineDays} days.`],['Is any payment held until the job is inspected?','Yes. The last 5% is due only after final inspection.'],
+  ['How much do you need before work starts?',POC?'Nothing. The full price is due on completion.':DB?`${T.depositPct!=null?T.depositPct+'%':money(T.deposit)} at signing, credited to the job. The balance is due on completion.`:`${money(T.deposit)} at signing, credited to the job. Nothing more until demolition begins.`],['How long will the job take?',`Up to ${T.timelineDays} days.`],['Is any payment held until the job is inspected?',POC?'Yes. The full price is due only after the job is complete and inspected.':DB?'Yes. The balance is due only after the job is complete and inspected.':'Yes. The last 5% is due only after final inspection.'],
   ['Will any price change be in writing first?','Yes. No work outside this scope without a signed change order.'],['How long is this price good for?',`${T.validityDays} days from the date of this report.`]];
+ const qR=[['What exactly will you repair?','Only the items listed in this report, each tied to a finding. Work not listed is not included.'],['Will you check for hidden damage under the repair?','Yes. If more damage is found it is shown to you and priced in writing before anything is done.'],['Does the repair renew the rest of the roof?','No. Repairs fix the areas listed. The rest of the roof stays as it is.'],['Will new materials match the existing roof?','We match as closely as available. Weathered roofing rarely matches exactly.'],['Who backs the workmanship, and for how long?',(d.repair&&num(d.repair.laborYears)!=null)?`${co}: ${esc(d.repair.laborYears)} years on labor for the repairs listed.`:'Stated in writing before work starts.'],q[7],q[9],q[10],q[11]];
+ if(T.timelineDays)qR.splice(7,0,['How long will the job take?',`Up to ${T.timelineDays} days.`]);
+ const QS=REPAIR?qR:q;
  const stg=[['At signing (deposit)',money(T.deposit),()=>T.deposit],['Start of demolition','40% of balance',b=>b*.4],['Material delivery','30% of balance',b=>b*.3],['Materials installed','25% of balance',b=>b*.25],['Final inspection','5% of balance',b=>b*.05]];
- const stt=`<table><tr><th>Stage</th><th>Share</th><th>Good</th><th>Better</th><th>Best</th></tr>${stg.map(s=>`<tr><td>${s[0]}</td><td>${s[1]}</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(+s[2](p.p-T.deposit).toFixed(2))}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
+ const stt=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>${stg.map(s=>`<tr><td>${s[0]}</td><td>${s[1]}</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(+s[2](p.p-T.deposit).toFixed(2))}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
+ const sttP=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr><tr><td>On completion, after final inspection</td><td>100% of price</td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr><tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
+ const sttD=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr><tr><td>At signing (deposit)</td><td>${T.depositPct!=null?T.depositPct+'% of price':money(T.deposit)}</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(dep(p.p))}</td>`).join('')}</tr><tr><td>On completion, after final inspection</td><td>Balance</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(p.p-dep(p.p))}</td>`).join('')}</tr><tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
  const mw=O.length==3?`${strip(O[0].mfrWarranty)} (Good), ${strip(O[1].mfrWarranty)} (Better) or ${strip(O[2].mfrWarranty)} (Best)`:'—';
+ const RP=d.repair||{},RI=RP.items||[];
+ const optsSec=`<section style="background:var(--card)"><div class="w">${rh('Your options')}<h2>Your three options</h2><p>Every option has the same scope of work. They differ only in the shingle and the length of our labor and material warranty.</p><div class="opts">${opts}</div><div class="inc"><div class="lab">Every option includes</div><ul>${inc.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div></section>`;
+ const itemSec=`<section><div class="w">${rh('Your options')}<h2>Every line, itemised</h2><p>Each line is tied to the finding that calls for it. ${MS?'Quantities come from the '+esc(M.measureSource)+' report.':'Priced on '+A+' of roof area.'}</p><div class="tw">${itab}</div><p style="font-size:14px;color:var(--slate)"><i>All three options carry the same scope of work; they differ in the shingle and the warranty. Damaged wood beyond ${T.woodPct}% of the deck is shown to you and priced in writing before it is replaced.</i></p></div></section>`;
+ const rq=`<section style="background:var(--card)"><div class="w">${rh('Your repair quote')}<h2>Your repair quote</h2><p>Each line is tied to the finding that calls for it. Work not listed here is not included.</p><div class="tw"><table><tr><th>#</th><th>Repair</th><th>Findings</th><th>Price</th></tr>${RI.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}${x.detail?`<br><small style="color:var(--slate)">${esc(x.detail)}</small>`:''}</td><td>${esc(x.refs||'—')}</td><td>${num(x.price)==null?'Included':money(num(x.price))}</td></tr>`).join('')}${D?`<tr class="tot"><td></td><td>List price</td><td></td><td>${money(PR[0].L)}</td></tr><tr><td></td><td>${esc(cap(D.name))} discount (${esc(D.pct)}%)</td><td></td><td>${PR[0].disc==null?'$ —':'−'+money(PR[0].disc)}</td></tr>`:''}<tr class="tot"><td></td><td>${D?'Your price':'Total'}</td><td></td><td>${money(PR[0].p)}</td></tr></table></div><p style="font-size:14px;color:var(--slate)"><i>Repairs fix the areas listed. They do not renew the rest of the roof. If more damage is found while working, it is shown to you and priced in writing before it is repaired.</i></p>${num(RP.laborYears)!=null?`<p><b class="p">Warranty.</b> ${co} warrants the labor on these repairs for ${esc(RP.laborYears)} years.</p>`:''}</div></section>`;
+ const tl=T.timelineDays?`<b class="p">Timeline.</b> The job is complete in up to ${T.timelineDays} days${REPAIR?'':' from the start of demolition'}, weather permitting.<br>`:'';
+ const wr=REPAIR?(num(RP.laborYears)!=null?`<b class="p">Warranty.</b> ${co} warrants the labor on the repairs listed for ${esc(RP.laborYears)} years.<br>`:''):`<b class="p">Warranties.</b> Manufacturer warranty on materials: ${mw}. ${co} labor and material warranty: ${O.map((o,i)=>`${esc(o.laborYears)} years (${tiers[i]})`).join(', ')}.<br>`;
+ const srcOf=id=>{const k=String(id==null?'':id);const f=F.find(x=>String(x.photoId)==k&&x.photoSrc);return f?f.photoSrc:((d.readingSet&&String(d.readingSet.photoId)==k&&d.readingSet.photoSrc)||'')};
+ const coverSrc=M.coverPhotoSrc||srcOf(M.coverPhotoId)||h.photoSrc||'';
  document.title=`Roof Condition Report · ${M.addressLine1||''}`;
- $('app').innerHTML=`<header class="dark cover"><div class="w"><div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep)+', ':''}${co}</b></div></div><div class="lab kick">Roof condition report · ${esc(M.product||'Shingle roof replacement')}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div>${M.coverPhotoSrc||(h.photoSrc)?`<img src="${esc(M.coverPhotoSrc||h.photoSrc)}" alt="">`:''}</header>
- <section><div class="w"><h2>At a glance</h2><div class="stats">${stats}</div><div class="lab">Condition of the shingle field</div><div class="bar">${bar}</div><div class="call"><div class="lab" style="color:var(--sig)">The one thing to know</div><h3>${esc(V.headline)}</h3><p>${esc(V.paragraph)}</p></div></div></section>
- ${hero}<section><div class="w">${cards}</div></section>${rs}
- <section style="padding-top:0"><div class="w"><h2>Problems and solutions</h2><div class="tw">${ps}</div></div></section>${ms}
- <section style="background:var(--card)"><div class="w"><h2>Your three options</h2><p>Every option has the same scope of work. They differ only in the shingle and the length of our labor and material warranty.</p><div class="opts">${opts}</div><p class="p" style="font-size:14px;color:var(--slate);margin-top:22px"><b>Every option includes:</b> ${inc.join(' · ')}.</p></div></section>
- <section><div class="w"><h2>Every line, itemised</h2><p>Each line is tied to the finding that calls for it. ${MS?'Quantities come from the '+esc(M.measureSource)+' report.':'Priced on '+A+' of roof area.'}</p><div class="tw">${itab}</div><p style="font-size:14px;color:var(--slate)"><i>All three options carry the same scope of work; they differ in the shingle and the warranty. Damaged wood beyond ${T.woodPct}% of the deck is shown to you and priced in writing before it is replaced.</i></p></div></section>
- <section style="background:var(--card)"><div class="w"><h2>Compare us against anyone</h2><p>Ask every contractor who quotes this roof the same twelve questions. Here are our answers.</p><div class="tw"><table><tr><th>Ask every contractor</th><th>Our answer</th></tr>${q.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('')}</table></div></div></section>
- <section><div class="w"><h2>Terms, and no pressure</h2><p>A ${money(T.deposit)} deposit at signing, credited to the job. California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less. The remaining balance is paid in four stages, each tied to work you can see.</p><div class="tw">${stt}</div><p>${D?`<b class="p">Discount.</b> A ${esc(D.pct)}% ${esc(D.name)} discount is applied to every option. The prices above already include it.<br>`:''}<b class="p">Timeline.</b> The job is complete in up to ${T.timelineDays} days from the start of demolition, weather permitting.<br><b class="p">Warranties.</b> Manufacturer warranty on materials: ${mw}. ${co} labor and material warranty: ${O.map((o,i)=>`${esc(o.laborYears)} years (${tiers[i]})`).join(', ')}.<br><b class="p">Changes.</b> Nothing outside this scope is done without a written change order you have signed, with the price stated first.<br><b class="p">Validity.</b> These prices hold for ${T.validityDays} days from ${esc(M.date)}.</p><div class="np"><div class="lab" style="color:var(--grn)">No pressure</div><p style="margin:8px 0 0">You do not need to decide today. This report is yours to keep. Take it, show it to anyone, and put the twelve questions on the previous page to every contractor you talk to. The roof needs replacing; it does not need replacing by us unless we are the right choice.</p></div>
- <h2 style="margin-top:56px;font-size:30px">Acceptance</h2><p class="p" style="font-size:15px">${M.rep?`<b>${esc(M.rep)}</b><br>Sales Representative, ${co}`:`<b>${co}</b>`}${M.companyAddress?`<br>${esc(M.companyAddress)}`:''}</p><div class="sig"><div>Option chosen (Good / Better / Best)</div><div>Homeowner signature</div><div>Date</div><div>Homeowner name (print)</div><div>For ${co}</div><div>Date</div></div></div></section>
+ $('app').innerHTML=`<header class="dark cover ${coverSrc?'':'nophoto'}"><div class="w cw"><div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep)+', ':''}${co}</b></div></div><div class="ct"><div class="lab kick">Roof condition report · ${esc(M.product||(REPAIR?'Roof repair':'Shingle roof replacement'))}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div></div>${coverSrc?`<img class="bgimg" src="${esc(coverSrc)}" alt="">`:''}</header>
+ <section><div class="w">${rh('At a glance')}<h2>At a glance</h2><div class="stats">${stats}</div><div class="lab">Condition of the shingle field</div><div class="bar">${bar}</div><div class="call"><div class="lab" style="color:var(--sig)">The one thing to know</div><h3>${esc(V.headline)}</h3><p>${esc(V.paragraph)}</p></div>${glance}</div></section>
+ ${hero}<section><div class="w">${rh('Findings')}${cards}</div></section>${rs}
+ <section style="padding-top:0"><div class="w">${rh('Problems and solutions')}<h2>Problems and solutions</h2><p>Every problem found, what fixes it, in order of priority.</p><div>${ps}</div></div></section>${ms}
+ ${REPAIR?rq:optsSec}
+ ${REPAIR?'':itemSec}
+ <section style="background:var(--card)"><div class="w">${rh('Compare us against anyone')}<h2>Compare us against anyone</h2><p>Ask every contractor who quotes this ${REPAIR?'work':'roof'} the same ${REPAIR?'':'twelve '}questions. Here are our answers.</p><div class="tw"><table><tr><th>Ask every contractor</th><th>Our answer</th></tr>${QS.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('')}</table></div></div></section>
+ <section><div class="w">${rh('Terms')}<h2>Terms, and no pressure</h2>${POC?`<p>No deposit is required. The full price is due on completion, after the final inspection.</p>`:DB?`<p>${T.depositPct!=null?T.depositPct+'%':money(T.deposit)} deposit at signing, credited to the job. The balance is due on completion, after the final inspection.</p>`:`<p>A ${money(T.deposit)} deposit at signing, credited to the job. California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less. The remaining balance is paid in four stages, each tied to work you can see.</p>`}<div class="tw">${POC?sttP:DB?sttD:stt}</div><p>${D?`<b class="p">Discount.</b> A ${esc(D.pct)}% ${esc(D.name)} discount is applied to every option. The prices above already include it.<br>`:''}${tl}${wr}<b class="p">Changes.</b> Nothing outside this scope is done without a written change order you have signed, with the price stated first.<br><b class="p">Validity.</b> These prices hold for ${T.validityDays} days from ${esc(M.date)}.</p><div class="np"><div class="lab" style="color:var(--grn)">No pressure</div><p style="margin:8px 0 0">You do not need to decide today. This report is yours to keep. Take it, show it to anyone, and put the ${REPAIR?'':'twelve '}questions on the previous page to every contractor you talk to.${REPAIR?'':' The roof needs replacing; it does not need replacing by us unless we are the right choice.'}</p></div>
+ <h2 style="margin-top:56px;font-size:30px">Acceptance</h2><div class="lab" style="margin-bottom:6px">Prepared by</div><p class="p" style="font-size:15px">${M.rep?`<b>${esc(M.rep)}</b><br>Sales Representative, ${co}`:`<b>${co}</b>`}${M.companyAddress?`<br>${esc(M.companyAddress)}`:''}</p><div class="sig"><div>Option chosen (Good / Better / Best)</div><div>Homeowner signature</div><div>Date</div><div>Homeowner name (print)</div><div>For ${co}</div><div>Date</div></div></div></section>
  <footer><div class="w">Roof Condition Report · ${A1}, ${A2} · ${co}</div></footer>`;
 }
 const $=id=>document.getElementById(id);
 function load(){try{return window.REPORT_DATA||JSON.parse($('report-data').textContent)}catch(e){return null}}
-window.renderReport=d=>{const m=validate(d);if(m.length)console.warn('Report missing inputs:',m);render(d);return m};
+const THEMES=[['day','Day'],['dark','Dark'],['blush','Blush']];
+const ALIAS={woman:'blush',rose:'blush',light:'day'};
+function applyTheme(d){
+ let t=null;try{t=localStorage.getItem('reportTheme')}catch(e){}
+ t=ALIAS[t]||t;if(!THEMES.some(x=>x[0]==t)){t=d.meta&&d.meta.theme;t=ALIAS[t]||t}
+ const ok=THEMES.some(x=>x[0]==t),root=document.documentElement;
+ if(ok)root.setAttribute('data-theme',t);else root.removeAttribute('data-theme');
+ let bar=document.getElementById('tsw');
+ if(d.meta&&d.meta.themeSwitcher===false){if(bar)bar.remove();return}
+ if(!bar){bar=document.createElement('div');bar.id='tsw';bar.className='tsw';bar.setAttribute('role','group');bar.setAttribute('aria-label','Report theme');
+  bar.innerHTML=THEMES.map(x=>`<button type="button" data-t="${x[0]}">${x[1]}</button>`).join('');
+  bar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.t;document.documentElement.setAttribute('data-theme',v);try{localStorage.setItem('reportTheme',v)}catch(er){}mark()});
+  document.body.appendChild(bar)}
+ mark()}
+function mark(){const cur=document.documentElement.getAttribute('data-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches?'dark':'day');
+ document.querySelectorAll('#tsw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t==cur)))}
+window.renderReport=d=>{const m=validate(d);if(m.length)console.warn('Report missing inputs:',m);render(d);applyTheme(d);return m};
 window.validateReport=validate;
 window.addEventListener('message',e=>{if(e.data&&e.data.findings)window.renderReport(e.data)});
 const D0=load();if(D0)window.renderReport(D0);
