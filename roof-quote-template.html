@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roof Condition Report & Proposal</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('[https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@300;400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@300;400;500;600;700&display=swap)');
         
         :root {
             --ink: #111517;
@@ -355,7 +355,7 @@
         {
           "severity": "DEFINING",
           "photoId": "60039",
-          "photoSrc": "https://images.unsplash.com/photo-1632759145351-1d592919f522?auto=format&fit=crop&w=600&q=80",
+          "photoSrc": "[https://images.unsplash.com/photo-1632759145351-1d592919f522?auto=format&fit=crop&w=600&q=80](https://images.unsplash.com/photo-1632759145351-1d592919f522?auto=format&fit=crop&w=600&q=80)",
           "title": "Worn to the mat on both slopes, the valley sealed in cement",
           "problem": ["On both slopes the white fiberglass mat shows through the shingles course after course.", "The valley where the slopes meet has been filled with a long band of roof cement.", "At lower right the hip caps are broken apart, with loose pieces lying on the roof."],
           "solution": ["Tear off the roof down to the deck.", "Inspect the deck; replace rotted or damaged wood.", "Install new underlayment, valley lining, drip edge, flashings, shingles, and hip and ridge caps."]
@@ -363,7 +363,7 @@
         {
           "severity": "HIGH",
           "photoId": "59993",
-          "photoSrc": "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80",
+          "photoSrc": "[https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80](https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80)",
           "title": "Rotted wood under the eave shingle",
           "problem": ["With the shingle lifted, the wood beneath is dark and split.", "The wood is breaking up into loose fibres; a section has broken away.", "The metal edge below it is stained."],
           "solution": ["Replace the rotted decking at the eave.", "Install new drip edge along the eave.", "Probe along the eave to find how far the rot runs."]
@@ -397,7 +397,6 @@
             const discountFactor = (100 - discountPct) / 100;
             const tierNames = ['Good', 'Better', 'Best'];
 
-            // Calculate options
             const processedOptions = (data.options || []).map((opt, i) => {
                 const list = opt.listPrice || 0;
                 const net = list * discountFactor;
