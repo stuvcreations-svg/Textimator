@@ -20,9 +20,9 @@ const geminiApiKey = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 // Company details printed on the report (set these in your environment)
-const COMPANY_NAME = process.env.COMPANY_NAME || '';       // e.g. "Top Elite Roofing"
-const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || ''; // optional
-const REP_NAME = process.env.REP_NAME || '';               // optional
+const COMPANY_NAME = process.env.COMPANY_NAME || '';       
+const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || ''; 
+const REP_NAME = process.env.REP_NAME || '';               
 
 const userSessions = new Map();
 
@@ -145,7 +145,7 @@ async function buildReportData(session) {
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
   
   if (!raw) {
-    console.error('🚨 Gemini API Failure Payload:', JSON.stringify(data, null, 2));
+    console.error('🚨 Gemini Report Builder API Failure:', JSON.stringify(data, null, 2));
     throw new Error('Report builder returned nothing: ' + (data.error?.message || 'Unknown API Error'));
   }
   
@@ -304,9 +304,22 @@ app.post('/', async (req, res) => {
     });
 
     let rawAiOutput = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawAiOutput) return;
+    
+    // Safety check 1: Did Gemini fail entirely?
+    if (!rawAiOutput) {
+      console.error('🚨 Gemini Intake API Failure:', JSON.stringify(geminiData, null, 2));
+      return;
+    }
 
-    const parsed = parseJsonText(rawAiOutput);
+    let parsed;
+    // Safety check 2: Did Gemini return bad formatting?
+    try {
+      parsed = parseJsonText(rawAiOutput);
+    } catch (parseErr) {
+      console.error('🚨 Gemini Intake Output was not valid JSON. Raw output:', rawAiOutput);
+      return;
+    }
+
     session.data = { ...session.data, ...parsed.collected_data };
     session.isComplete = Boolean(parsed.is_complete);
 
@@ -362,17 +375,23 @@ app.post('/', async (req, res) => {
 
 async function sendWhatsAppMessage(to, text) {
   try {
-    await fetch(`[https://graph.facebook.com/v26.0/$](https://graph.facebook.com/v26.0/$){waPhoneId}/messages`, {
+    const res = await fetch(`[https://graph.facebook.com/v26.0/$](https://graph.facebook.com/v26.0/$){waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text', text: { body: text } })
     });
-  } catch (err) {}
+    if (!res.ok) {
+      const err = await res.json();
+      console.error('❌ WhatsApp Message Failed:', JSON.stringify(err, null, 2));
+    }
+  } catch (err) {
+    console.error('❌ WhatsApp Network Error:', err.message);
+  }
 }
 
 async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
   try {
-    await fetch(`[https://graph.facebook.com/v26.0/$](https://graph.facebook.com/v26.0/$){waPhoneId}/messages`, {
+    const res = await fetch(`[https://graph.facebook.com/v26.0/$](https://graph.facebook.com/v26.0/$){waPhoneId}/messages`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -383,7 +402,13 @@ async function sendWhatsAppDocument(to, fileUrl, fileName, caption) {
         document: { link: fileUrl, filename: fileName, caption }
       })
     });
-  } catch (err) {}
+    if (!res.ok) {
+      const err = await res.json();
+      console.error('❌ WhatsApp Document Failed:', JSON.stringify(err, null, 2));
+    }
+  } catch (err) {
+    console.error('❌ WhatsApp Network Error:', err.message);
+  }
 }
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
