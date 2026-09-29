@@ -19,52 +19,39 @@ const geminiApiKey = process.env.GEMINI_API_KEY;
 
 const userSessions = new Map();
 
-const DEFAULT_STATE = {
-  customer_name_and_address: null,
-  building_stories: null,
-  insurance_or_retail: null,
-  root_cause: null,
-  scope_of_work: null,
-  materials_current_and_new: null,
-  site_notes: null,
-  add_ons_and_contingencies: null,
-  total_price: null,
-  timeline: null,
-  payment_terms: null,
-  warranty_options: null
-};
-
 const getSystemInstruction = (contractorName) => `
-You are Textimator, a high-end AI estimating assistant. You are chatting with a roofing contractor named ${contractorName} who is currently in the field.
+You are Textimator, an estimating assistant for ${contractorName}. 
+Your goal is to collect details for a 3-tier (Good/Better/Best) roof replacement quote.
 
-TONE & PACING (CRITICAL RULES):
-- Act like you are sending a quick SMS text message. Be EXTREMELY brief, friendly, and efficient.
-- Maximum 1 to 2 short sentences per reply.
-- YOU MUST ASK ONLY ONE QUESTION AT A TIME. 
+TONE: Extremely brief, 1-2 short sentences per reply. Ask ONLY ONE question at a time.
 
-LANGUAGE RULE:
-- If ${contractorName} speaks in Spanish, you MUST reply in Spanish. 
-- ALL data extracted into the "collected_data" JSON MUST be translated into professional English for the final PDF report.
+REQUIRED DATA TO COLLECT:
+1. Homeowner Name & Address
+2. Roof area (sq ft) and pitch
+3. 3-Tier Pricing (Good, Better, Best)
+4. Shingle brands for each tier
+5. Warranty lengths for each tier
 
-YOUR MISSION: Collect these 12 pieces of information:
-1. customer_name_and_address (REQUIRED)
-2. building_stories 
-3. insurance_or_retail
-4. root_cause 
-5. scope_of_work (REQUIRED)
-6. materials_current_and_new
-7. site_notes 
-8. add_ons_and_contingencies 
-9. total_price (REQUIRED)
-10. timeline 
-11. payment_terms 
-12. warranty_options
+JSON OUTPUT PROTOCOL:
+Return ONLY a JSON object with two keys:
+1. "customer_reply": Your brief text message back to the contractor.
+2. "report_data": null (if still chatting), OR a full JSON object if they ask to generate the quote.
 
-BEHAVIOR PROTOCOLS:
-- RETURN FORMAT: Return ONLY valid raw JSON with keys: "collected_data", "customer_reply", and "is_complete".
-- PICTURE RULE: Check "photos_uploaded". If 0, explicitly ask for a photo.
-- REQUIRED FIELDS & SKIPPING: If they say "skip the rest" or "generate quote", check the 3 REQUIRED fields. If missing, politely ask for them. If present, set "is_complete": true.
-- POST-QUOTE EDITS: If they correct a detail later, update the value, acknowledge it, and set "is_complete": true to rebuild the PDF.
+REPORT_DATA EXACT STRUCTURE (when generating):
+{
+  "meta": {
+    "homeowner": "Name", "addressLine1": "Street", "addressLine2": "City",
+    "areaSqFt": "1200", "pitch": "6/12", "company": "Textimator", "rep": "${contractorName}", "date": "Today", "verdict": "Full roof replacement required."
+  },
+  "findings": [
+    { "title": "Damage", "severity": "HIGH", "problems": ["Observation 1"], "solutions": ["Fix 1"] }
+  ],
+  "options": [
+    { "name": "GOOD", "listPrice": "10000", "shingle": "Brand X", "laborYears": "10", "mfrWarranty": "Limited" },
+    { "name": "BETTER", "listPrice": "12000", "shingle": "Brand Y", "laborYears": "15", "mfrWarranty": "50-Year" },
+    { "name": "BEST", "listPrice": "15000", "shingle": "Brand Z", "laborYears": "25", "mfrWarranty": "Lifetime" }
+  ]
+}
 `;
 
 async function downloadWhatsAppImage(mediaId) {
@@ -112,26 +99,24 @@ app.post('/', async (req, res) => {
 
   const senderProfileName = contacts?.profile?.name || 'Contractor';
   const senderPhone = message.from;
-  let incomingText = "";
 
   if (!userSessions.has(senderPhone)) {
     userSessions.set(senderPhone, {
       contractorName: senderProfileName,
-      data: { ...DEFAULT_STATE },
-      images: [], 
-      isComplete: false,
+      chat_history: "",
+      images: [],
       quoteNumber: `Q-${Math.floor(100000 + Math.random() * 900000)}` 
     });
   }
   const session = userSessions.get(senderPhone);
 
   if (message.type === 'text') {
-    incomingText = message.text.body;
+    session.chat_history += `\nContractor: ${message.text.body}`;
   } else if (message.type === 'image') {
     const savedFileName = await downloadWhatsAppImage(message.image.id);
     if (savedFileName) {
       session.images.push(savedFileName);
-      incomingText = `[System Note: The contractor uploaded a roof photo.]`;
+      session.chat_history += `\n[System Note: Contractor uploaded a photo saved as ${savedFileName}]`;
     }
   } else {
     return; 
@@ -148,17 +133,10 @@ app.post('/', async (req, res) => {
         contents: [
           {
             role: 'user',
-            parts: [{ text: JSON.stringify({ 
-              current_state: session.data, 
-              photos_uploaded: session.images.length,
-              incoming_message: incomingText 
-            }) }]
+            parts: [{ text: JSON.stringify({ chat_history: session.chat_history }) }]
           }
         ],
-        generationConfig: {
-          response_mime_type: 'application/json',
-          temperature: 0.1
-        }
+        generationConfig: { response_mime_type: 'application/json', temperature: 0.1 }
       })
     });
 
@@ -169,64 +147,39 @@ app.post('/', async (req, res) => {
     rawAiOutput = rawAiOutput.replace(/```json/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(rawAiOutput);
     
-    session.data = { ...session.data, ...parsed.collected_data };
-    session.isComplete = Boolean(parsed.is_complete);
+    session.chat_history += `\nTextimator: ${parsed.customer_reply}`;
 
-    if (session.isComplete) {
-      const formatField = (val, fallback) => (val === 'skipped' || !val) ? fallback : val;
+    if (parsed.report_data) {
       const host = req.get('host');
       const quoteNumber = session.quoteNumber;
 
-      let imageHtmlBlock = session.images.length > 0 
-        ? session.images.map(img => `<img src="https://${host}/files/${img}" alt="Roof condition photo"/>`).join('')
-        : '<p>No photos logged for this inspection.</p>';
+      // Attach local images to the findings array sequentially
+      if (parsed.report_data.findings && session.images.length > 0) {
+        parsed.report_data.findings.forEach((f, index) => {
+          if (session.images[index]) {
+            f.photoSrc = `https://${host}/files/${session.images[index]}`;
+          }
+        });
+      }
 
-      const fullQuoteData = {
-        quote_number: quoteNumber,
-        quote_date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        quote_valid_until: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        
-        customer_name_and_address: formatField(session.data.customer_name_and_address, 'Client Details Pending'),
-        building_stories: formatField(session.data.building_stories, 'Not specified'),
-        insurance_or_retail: formatField(session.data.insurance_or_retail, 'Standard Retail'),
-        root_cause: formatField(session.data.root_cause, 'Not specified'),
-        scope_of_work: formatField(session.data.scope_of_work, 'Pending evaluation'),
-        materials_current_and_new: formatField(session.data.materials_current_and_new, 'TBD upon inspection'),
-        site_notes: formatField(session.data.site_notes, 'None'),
-        add_ons_and_contingencies: formatField(session.data.add_ons_and_contingencies, 'None specified'),
-        total_price: formatField(session.data.total_price, 'TBD'),
-        timeline: formatField(session.data.timeline, 'TBD'),
-        payment_terms: formatField(session.data.payment_terms, 'Standard terms apply'),
-        warranty_options: formatField(session.data.warranty_options, 'Standard workmanship warranty'),
-        
-        roof_pictures: imageHtmlBlock 
-      };
-
-      const merged = { 
-        company_name: "Textimator",
-        company_phone: "(555) 555-0199",
-        company_email: "estimates@textimator.com",
-        company_address: "Cape Coral, FL",
-        ...fullQuoteData 
-      };
-      
       const templatePath = path.join(__dirname, 'roof-quote-template.html');
-      const rawTemplate = fs.readFileSync(templatePath, 'utf8');
-      const finalHtml = rawTemplate.replace(/{{([a-zA-Z0-9_]+)}}/g, (match, key) => (merged[key] !== undefined ? merged[key] : ''));
+      const tpl = fs.readFileSync(templatePath, 'utf8');
+      
+      // Inject the JSON directly into the script tag
+      const finalHtml = tpl.replace(
+        /(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+        (_, a, b) => a + JSON.stringify(parsed.report_data).replace(/<\//g, '<\\/') + b
+      );
 
       const fileName = `Roof_Quote_${quoteNumber}.html`;
       fs.writeFileSync(path.join(publicDir, fileName), finalHtml, 'utf8');
       const fileUrl = `https://${host}/files/${fileName}`;
 
-      await sendWhatsAppMessage(senderPhone, `The inspection report and proposal are ready:\n${fileUrl}`);
-      session.isComplete = false;
+      await sendWhatsAppMessage(senderPhone, `Your 3-Tier Proposal is ready:\n${fileUrl}`);
       return;
     }
 
-    let replyText = parsed.customer_reply;
-    const filledFields = Object.values(session.data).filter(val => val !== null && val !== 'skipped').length;
-    replyText += `\n\n📊 ${Math.round((filledFields / 12) * 100)}% | ${filledFields}/12`;
-    await sendWhatsAppMessage(senderPhone, replyText);
+    await sendWhatsAppMessage(senderPhone, parsed.customer_reply);
 
   } catch (err) {
     console.error('❌ Processing error:', err);
