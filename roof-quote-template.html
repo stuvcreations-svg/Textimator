@@ -3,243 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roofing Estimate {{quote_number}}</title>
+    <title>Roof Condition Report | {{quote_number}}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@300;400;500;600;700&display=swap');
         
+        :root {
+            --ink: #111517;
+            --deep: #181F22;
+            --paper: #FBF9F6;
+            --card: #F1EEE8;
+            --rule: #DED7CC;
+            --slate: #727A7E;
+            --mute: #9BA3A6;
+            --sig: #CE4E1B;
+            --sigbg: #FAEBE2;
+            --grn: #2B6A4E;
+            --grnbg: #E8F0EB;
+            --amb: #B07D14;
+        }
+
         body { 
-            font-family: 'Montserrat', sans-serif; 
-            background-color: #f4f7f6; 
-            color: #2C3E50; 
+            font-family: 'Lora', serif; 
+            background-color: #E5E5E5; 
+            color: var(--ink); 
             margin: 0; 
-            padding: 40px; 
+            padding: 40px 20px; 
             -webkit-font-smoothing: antialiased;
         }
-        .container { 
-            max-width: 850px; 
-            margin: auto; 
-            background: #ffffff; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            border-radius: 8px; 
-            overflow: hidden; 
+
+        h1, h2, h3, h4, h5, .label, th, .btn {
+            font-family: 'Poppins', sans-serif;
         }
-        .header-bar { 
-            background-color: #182227; 
-            color: #ffffff; 
-            padding: 30px 40px; 
-            border-bottom: 6px solid #d35400; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
+
+        .page {
+            max-width: 850px;
+            margin: 0 auto 40px auto;
+            background: var(--paper);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
         }
-        .header-left { 
-            font-size: 14px; 
-            text-transform: uppercase; 
-            color: #a0aab2; 
-            letter-spacing: 1px; 
+
+        /* --- COVER (PAGE 1) --- */
+        .cover {
+            background-color: var(--ink);
+            color: white;
+            padding: 60px 50px 80px 50px;
         }
-        .header-left span { 
-            color: #ffffff; 
-            font-weight: 700; 
-            font-size: 18px; 
-            display: block; 
-            margin-top: 5px; 
+        .cover-meta {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--mute);
+            margin-bottom: 80px;
         }
-        .header-right { 
-            text-align: right; 
+        .cover-meta strong {
+            display: block;
+            color: white;
+            font-size: 14px;
+            margin-top: 5px;
         }
-        .header-right h1 { 
-            margin: 0; 
-            color: #d35400; 
-            font-size: 22px; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px; 
+        .cover h1 {
+            font-size: 24px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0 0 10px 0;
+            color: white;
         }
-        .header-right p { 
-            margin: 5px 0 0; 
-            font-size: 12px; 
-            color: #a0aab2; 
+        .cover .address {
+            font-size: 32px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 300;
+            color: var(--card);
+            margin: 0 0 40px 0;
+            line-height: 1.2;
+        }
+        .cover .subtitle {
+            font-size: 16px;
+            color: var(--mute);
+            font-style: italic;
+        }
+
+        .content { padding: 50px; }
+
+        /* --- TYPOGRAPHY & HEADERS --- */
+        h2.section-title {
+            font-size: 28px;
+            font-weight: 400;
+            color: var(--ink);
+            margin-top: 0;
+            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+
+        .intro-text {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            color: var(--ink);
+        }
+
+        /* --- AT A GLANCE (PAGE 2) --- */
+        .glance-grid {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--rule);
+            padding-bottom: 30px;
+        }
+        .glance-item h3 {
+            font-size: 32px;
+            font-weight: 300;
+            margin: 0;
+            color: var(--sig);
+        }
+        .glance-item p {
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--slate);
+            margin: 5px 0 0 0;
+            letter-spacing: 1px;
+        }
+
+        /* --- FINDINGS & PHOTOS --- */
+        .chip {
+            display: inline-block;
+            background: var(--sigbg);
+            color: var(--sig);
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 4px 10px;
+            border-radius: 3px;
+            margin-bottom: 15px;
+        }
+        .photo-gallery {
+            background: var(--card);
+            padding: 30px;
+            margin-bottom: 40px;
+            border-left: 4px solid var(--sig);
+        }
+        .photos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .photos-grid img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            object-fit: cover;
+            border: 3px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* --- GREEN SOLUTION PANEL --- */
+        .solution-panel {
+            background: var(--grnbg);
+            border-left: 4px solid var(--grn);
+            padding: 20px 25px;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+        .solution-panel h4 {
+            color: var(--grn);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 10px 0;
+        }
+        .solution-panel p {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* --- TABLES --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+        th {
+            background: var(--deep);
+            color: white;
+            text-align: left;
+            padding: 12px 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--rule);
+            font-size: 14px;
+            line-height: 1.5;
+            vertical-align: top;
+        }
+        tr:nth-child(even) td {
+            background: white;
+        }
+
+        /* --- INVESTMENT SECTION --- */
+        .investment-card {
+            background: var(--ink);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .investment-card h3 {
+            color: var(--card);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0 0 15px 0;
+        }
+        .investment-card .price {
+            font-size: 56px;
+            font-weight: 300;
+            margin: 0;
+            color: white;
         }
         
-        .content { padding: 40px; }
-        
-        .section-header { 
-            font-size: 20px; 
-            font-weight: 700; 
-            color: #182227; 
-            border-bottom: 2px solid #f0f0f0; 
-            padding-bottom: 10px; 
-            margin-bottom: 25px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-        .section-header span { color: #d35400; }
-        
-        .grid-2 { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 30px; 
-            margin-bottom: 40px; 
-        }
-        .data-block label { 
-            display: block; 
-            font-size: 11px; 
-            color: #d35400; 
-            text-transform: uppercase; 
-            font-weight: 700; 
-            letter-spacing: 1px; 
-            margin-bottom: 8px; 
-        }
-        .data-block .val { 
-            font-size: 15px; 
-            line-height: 1.6; 
-            color: #333333; 
-            background: #fcfcfc; 
-            padding: 12px; 
-            border-left: 3px solid #182227; 
-            border-radius: 0 4px 4px 0; 
-        }
-        
-        .photos-section { margin-bottom: 40px; }
-        .photos-grid { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 15px; 
-        }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 40px; 
-        }
-        th { 
-            text-align: left; 
-            padding: 15px; 
-            background-color: #182227; 
-            color: #ffffff; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-        td { 
-            padding: 15px; 
-            border-bottom: 1px solid #eee; 
-            font-size: 14px; 
-            color: #333333; 
-        }
-        tr:nth-child(even) td { background-color: #fafafa; }
-        
-        .pricing-block { 
-            background-color: #182227; 
-            color: #ffffff; 
-            padding: 40px; 
-            text-align: center; 
-            border-radius: 8px; 
-            border-top: 5px solid #d35400; 
-        }
-        .pricing-block h3 { 
-            color: #d35400; 
-            font-size: 16px; 
-            text-transform: uppercase; 
-            margin: 0 0 10px 0; 
-            letter-spacing: 2px; 
-        }
-        .pricing-block .price { 
-            font-size: 48px; 
-            font-weight: 700; 
-            margin: 0; 
-        }
-        .pricing-block p { 
-            color: #a0aab2; 
-            font-size: 13px; 
-            margin-top: 15px; 
-            text-transform: uppercase; 
+        .footer {
+            border-top: 1px solid var(--rule);
+            padding-top: 20px;
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            color: var(--slate);
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header-bar">
-            <div class="header-left">Estimate Number <span>{{quote_number}}</span></div>
-            <div class="header-right">
-                <h1>{{company_name}}</h1>
-                <p>{{company_phone}} | {{company_email}}</p>
-            </div>
+
+    <!-- PAGE 1: COVER -->
+    <div class="page cover">
+        <div class="cover-meta">
+            <div>PREPARED FOR <strong>{{customer_name_and_address}}</strong></div>
+            <div>REPORT DATE <strong>{{quote_date}}</strong></div>
+            <div>PREPARED BY <strong>{{company_name}}</strong></div>
         </div>
         
-        <div class="content">
-            <div class="section-header">Client & <span>Property</span></div>
-            <div class="grid-2">
-                <div class="data-block">
-                    <label>Customer Details</label>
-                    <div class="val">{{customer_name_and_address}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Building Type</label>
-                    <div class="val">{{building_stories}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Quote Type</label>
-                    <div class="val">{{insurance_or_retail}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Root Cause</label>
-                    <div class="val">{{root_cause}}</div>
-                </div>
-            </div>
+        <h1>Roof Condition Report</h1>
+        <div class="address">{{company_address}}</div>
+        <div class="subtitle">Every problem found on the roof, photographed, with the work that fixes it.</div>
+    </div>
 
-            <div class="section-header">Inspection <span>Findings</span></div>
-            <div class="grid-2">
-                <div class="data-block">
-                    <label>Scope of Work</label>
-                    <div class="val">{{scope_of_work}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Materials</label>
-                    <div class="val">{{materials_current_and_new}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Site Notes</label>
-                    <div class="val">{{site_notes}}</div>
-                </div>
-                <div class="data-block">
-                    <label>Add-ons & Contingencies</label>
-                    <div class="val">{{add_ons_and_contingencies}}</div>
-                </div>
+    <!-- PAGE 2: AT A GLANCE & FINDINGS -->
+    <div class="page content">
+        <h2 class="section-title">At a glance</h2>
+        <div class="glance-grid">
+            <div class="glance-item">
+                <h3>Report</h3>
+                <p>Inspection Logged</p>
             </div>
-            
-            <!-- THIS SECTION IS REQUIRED TO RENDER THE PHOTOS -->
-            <div class="section-header">Photos & <span>Evidence</span></div>
-            <div class="photos-section">
-                <div class="photos-grid">{{roof_pictures}}</div>
+            <div class="glance-item">
+                <h3>{{building_stories}}</h3>
+                <p>Property Profile</p>
             </div>
-
-            <div class="section-header">Project <span>Terms</span></div>
-            <table>
-                <tr>
-                    <th>Item</th>
-                    <th>Description</th>
-                </tr>
-                <tr>
-                    <td>Timeline</td>
-                    <td>{{timeline}}</td>
-                </tr>
-                <tr>
-                    <td>Payment Terms</td>
-                    <td>{{payment_terms}}</td>
-                </tr>
-                <tr>
-                    <td>Warranty</td>
-                    <td>{{warranty_options}}</td>
-                </tr>
-            </table>
-
-            <div class="pricing-block">
-                <h3>Estimated Project Total</h3>
-                <div class="price">{{total_price}}</div>
-                <p>Valid until {{quote_valid_until}}</p>
+            <div class="glance-item">
+                <h3>{{insurance_or_retail}}</h3>
+                <p>Quote Type</p>
             </div>
         </div>
+
+        <div class="intro-text">
+            <strong>THE ONE THING TO KNOW:</strong> {{root_cause}}<br><br>
+            The pricing and scope detailed in this report are designed to fully address these core issues and provide a complete restoration of the roofing system.
+        </div>
+
+        <div class="chip">PHOTOGRAPHIC EVIDENCE</div>
+        <div class="photo-gallery">
+            <div class="photos-grid">
+                {{roof_pictures}}
+            </div>
+        </div>
+
+        <div class="solution-panel">
+            <h4>The Solution Scope</h4>
+            <p>{{scope_of_work}}</p>
+            <p style="margin-top: 10px;"><strong>Materials:</strong> {{materials_current_and_new}}</p>
+        </div>
+        
+        <div class="footer">
+            <div>{{company_name}} · {{company_email}}</div>
+            <div>Estimate ID: {{quote_number}}</div>
+        </div>
     </div>
+
+    <!-- PAGE 3: COMPARE US & TERMS -->
+    <div class="page content">
+        <h2 class="section-title">Compare us against anyone</h2>
+        <p class="intro-text">Ask every contractor who quotes this roof the same questions. Here are our answers.</p>
+
+        <table>
+            <tr>
+                <th>Ask Every Contractor</th>
+                <th>Our Answer</th>
+            </tr>
+            <tr>
+                <td>Will you remove every existing layer, down to the deck?</td>
+                <td>Yes. All layers come off and the deck is inspected before anything goes back.</td>
+            </tr>
+            <tr>
+                <td>What happens if the deck is damaged?</td>
+                <td>Damaged wood replacement is discussed prior to installation. Add-ons listed: {{add_ons_and_contingencies}}.</td>
+            </tr>
+            <tr>
+                <td>Who backs the workmanship, and for how long?</td>
+                <td>We provide a {{warranty_options}} to protect your investment.</td>
+            </tr>
+            <tr>
+                <td>How long will the job take?</td>
+                <td>{{timeline}}</td>
+            </tr>
+            <tr>
+                <td>What are the payment requirements?</td>
+                <td>{{payment_terms}}</td>
+            </tr>
+            <tr>
+                <td>How long is this price good for?</td>
+                <td>30 days from the date of this report (Valid until {{quote_valid_until}}).</td>
+            </tr>
+        </table>
+
+        <h2 class="section-title">Terms, and no pressure</h2>
+        <p class="intro-text">Site notes and access rules applied to this build: {{site_notes}}.</p>
+
+        <div class="investment-card">
+            <h3>Estimated Project Total</h3>
+            <div class="price">{{total_price}}</div>
+        </div>
+
+        <div class="solution-panel" style="background: var(--card); border-left-color: var(--slate); margin-top: 40px;">
+            <h4 style="color: var(--ink);">NO PRESSURE</h4>
+            <p style="color: var(--slate);">You do not need to decide today. This report is yours to keep. Take it, show it to anyone, and put the questions on this page to every contractor you talk to. The roof needs replacing; it does not need replacing by us unless we are the right choice.</p>
+        </div>
+
+        <div class="footer">
+            <div>{{company_name}} · {{company_phone}}</div>
+            <div>Page 3</div>
+        </div>
+    </div>
+
 </body>
 </html>
