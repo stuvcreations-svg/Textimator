@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const publicDir = path.join(__dirname, 'public');
+const publicDir = process.env.PUBLIC_DIR || path.join(__dirname, 'public');
 if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
 
 const TEMPLATE_PATH = path.join(__dirname, 'roof-quote-template.html');
@@ -43,6 +43,19 @@ const themeOf = (v) => {
   return THEMES.includes(t) ? t : null;
 };
 
+// Saved contractor profiles live in DATA_DIR. On Render, point DATA_DIR (and PUBLIC_DIR) at a Persistent Disk,
+// otherwise they are wiped on every deploy.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const PROFILE_FILE = path.join(DATA_DIR, 'profiles.json');
+let PROFILES = {};
+try { PROFILES = JSON.parse(fs.readFileSync(PROFILE_FILE, 'utf8')); } catch (e) { PROFILES = {}; }
+const getProfile = (phone) => PROFILES[phone] || null;
+function saveProfile(phone, p) {
+  PROFILES[phone] = p;
+  try { fs.writeFileSync(PROFILE_FILE, JSON.stringify(PROFILES, null, 2)); } catch (e) { console.error('❌ Could not save profile:', e.message); }
+}
+
 // =============================================================================
 // 1. CONVERSATION TEXT. Edit the words here; buttons are max 20 characters.
 // =============================================================================
@@ -56,8 +69,7 @@ const TXT = {
     qSource: 'Is this a retail or an insurance job?',
     qClaim: "What's the claim number?",
     qArea: 'About how many sq ft is the roof?',
-    qPriceRep: 'What are your prices? Good / Better / Best, like: 20k / 25k / 30k',
-    qPriceMore: (missing) => `Got it. And the ${missing}?`,
+    qPriceRep: "What's the price for the Good, Better and Best? Like: 20k / 25k / 30k (one or two is fine)",
     qPriceRpr: 'What are the repairs and their prices? Like: flashing $300, 12 shingles $650. Or one total.',
     qExtras: 'Anything else? (shingles, warranties, discount, timeline, payment terms) Type it all in one message, or tap below.',
     qChange: 'Sure, what should I change? Just type it.',
@@ -79,7 +91,22 @@ const TXT = {
     areaWord: 'sq ft', storiesWord: 'story', insuranceWord: 'Insurance',
     tierWords: ['Good', 'Better', 'Best'],
     blankArea: 'roof area', blankPrices: 'prices', blankShingles: 'shingles', blankYears: 'workmanship warranty', blankMfr: 'manufacturer warranty',
-    btn: { replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    qExtrasProfile: 'Any discount, or anything special for this job? Type it, or tap below.',
+    qAdd: 'What should I add? Type it all in one message.',
+    heard: (t) => `🎤 "${t}"`,
+    voiceFail: "I couldn't make that out. Please try again, or type it.",
+    okay: '👍 No problem. Type "setup" any time.',
+    offerSetup: '💡 Want me to remember your company and your usual shingles and warranties? It takes a minute.',
+    setupIntro: 'Quick setup, so I never ask these again. You can skip any question.',
+    sCompany: "What's your company name?",
+    sRep: 'What name should show on reports?',
+    sShingles: 'What are your usual shingles for Good / Better / Best?',
+    sYears: 'Usual workmanship warranty in years? Like: 10 / 15 / 25',
+    sMfr: 'Manufacturer warranty for each? Like: limited lifetime / 50-year / limited lifetime',
+    sPay: 'How do you usually get paid?',
+    sTheme: 'Which look do you like for your reports?',
+    setupDone: '✅ Saved! I will use these on every quote. Type "setup" any time to change them.',
+    btn: { add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección.`,
@@ -90,8 +117,7 @@ const TXT = {
     qSource: '¿Es un trabajo particular o de seguro?',
     qClaim: '¿Cuál es el número de reclamo?',
     qArea: '¿Cuántos pies cuadrados tiene el techo, más o menos?',
-    qPriceRep: '¿Cuáles son tus precios? Bueno / Mejor / Óptimo, así: 20k / 25k / 30k',
-    qPriceMore: (missing) => `Listo. ¿Y el ${missing}?`,
+    qPriceRep: '¿Cuál es el precio para Bueno, Mejor y Óptimo? Ej.: 20k / 25k / 30k (con uno o dos basta)',
     qPriceRpr: '¿Qué reparaciones harás y cuánto cuesta cada una? Ej.: flashing $300, 12 tejas $650. O un total.',
     qExtras: '¿Algo más? (tejas, garantías, descuento, plazo, forma de pago) Escríbelo todo en un mensaje, o toca abajo.',
     qChange: 'Claro, ¿qué cambio? Escríbelo.',
@@ -113,7 +139,22 @@ const TXT = {
     areaWord: 'pies²', storiesWord: 'piso', insuranceWord: 'Seguro',
     tierWords: ['Bueno', 'Mejor', 'Óptimo'],
     blankArea: 'área del techo', blankPrices: 'precios', blankShingles: 'tejas', blankYears: 'garantía de mano de obra', blankMfr: 'garantía del fabricante',
-    btn: { replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    qExtrasProfile: '¿Algún descuento o algo especial para este trabajo? Escríbelo, o toca abajo.',
+    qAdd: '¿Qué debo agregar? Escríbelo todo en un mensaje.',
+    heard: (t) => `🎤 "${t}"`,
+    voiceFail: 'No pude entenderlo. Inténtalo de nuevo, o escríbelo.',
+    okay: '👍 Sin problema. Escribe "setup" cuando quieras.',
+    offerSetup: '💡 ¿Quieres que recuerde tu empresa y tus tejas y garantías habituales? Toma un minuto.',
+    setupIntro: 'Configuración rápida, para no volver a preguntarte esto. Puedes omitir cualquier pregunta.',
+    sCompany: '¿Cómo se llama tu empresa?',
+    sRep: '¿Qué nombre debe aparecer en los informes?',
+    sShingles: '¿Cuáles son tus tejas habituales para Bueno / Mejor / Óptimo?',
+    sYears: '¿Garantía habitual de mano de obra en años? Ej.: 10 / 15 / 25',
+    sMfr: '¿Garantía del fabricante de cada una? Ej.: de por vida limitada / 50 años / de por vida limitada',
+    sPay: '¿Cómo sueles cobrar?',
+    sTheme: '¿Qué estilo prefieres para tus informes?',
+    setupDone: '✅ ¡Guardado! Lo usaré en cada cotización. Escribe "setup" cuando quieras cambiarlo.',
+    btn: { add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeAuto: 'Auto', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -229,7 +270,8 @@ building_stories, current_roof_and_condition, site_notes: strings
 pitch: string like "6/12" only if stated
 tiers: {"good":{"shingle","price","labor_years","mfr_warranty"},"better":{...},"best":{...}}
   price = number ("15k" = 15000); labor_years = number; shingle = brand and product line exactly as written; mfr_warranty = e.g. "limited lifetime" or "50-year".
-  Good/Better/Best = 1st/2nd/3rd in the order given. If one value is given for all tiers or "respectively", put the right value in each tier.
+  Good/Better/Best = 1st/2nd/3rd in the order given. One price with no tier named goes in "good"; two unnamed prices go in "good" and "better". If one value is given for all tiers or "respectively", put the right value in each tier.
+  When "awaiting" starts with "setup_", the contractor is describing their USUAL shingles and warranties: use the same tiers fields.
 repair: {"items":[{"name","price"}], "total_price": number, "labor_years": number}
 discount: {"pct": number, "name": string} or "none"
 payment: {"mode":"standard"|"on_completion"|"deposit_balance","deposit":number,"deposit_pct":number}. "POC", "pay when done", "no deposit" = on_completion.
@@ -307,25 +349,40 @@ async function extract(s, text) {
 // =============================================================================
 // 4. JOB DATA AND SESSIONS
 // =============================================================================
-const freshData = () => ({
-  customer_name_and_address: null, job_type: null, lead_source: null, claim_number: null,
-  roof_area_sqft: null, building_stories: null, current_roof_and_condition: null, site_notes: null, pitch: null,
-  tiers: { good: {}, better: {}, best: {} },
-  repair: { items: null, total_price: null, labor_years: null },
-  discount: null,
-  payment: { mode: null, deposit: null, deposit_pct: null },
-  timeline_days: null, wood_pct: null, report_theme: null, extra_notes: null
-});
+function freshData(profile) {
+  const d = {
+    customer_name_and_address: null, job_type: null, lead_source: null, claim_number: null,
+    roof_area_sqft: null, building_stories: null, current_roof_and_condition: null, site_notes: null, pitch: null,
+    tiers: { good: {}, better: {}, best: {} },
+    repair: { items: null, total_price: null, labor_years: null },
+    discount: null,
+    payment: { mode: null, deposit: null, deposit_pct: null },
+    timeline_days: null, wood_pct: null, report_theme: null, extra_notes: null
+  };
+  if (profile) {
+    ['good', 'better', 'best'].forEach((k) => {
+      const t = (profile.tiers || {})[k] || {};
+      if (t.shingle) d.tiers[k].shingle = t.shingle;
+      if (t.labor_years != null) d.tiers[k].labor_years = t.labor_years;
+      if (t.mfr_warranty) d.tiers[k].mfr_warranty = t.mfr_warranty;
+    });
+    if (profile.payment && profile.payment.mode) d.payment = { ...d.payment, ...profile.payment };
+    if (profile.timeline_days != null) d.timeline_days = profile.timeline_days;
+    if (profile.wood_pct != null) d.wood_pct = profile.wood_pct;
+    if (profile.theme) d.report_theme = profile.theme;
+  }
+  return d;
+}
 
 const userSessions = new Map();
 function getSession(phone, name) {
-  if (!userSessions.has(phone)) userSessions.set(phone, newSession(name));
+  if (!userSessions.has(phone)) userSessions.set(phone, newSession(name, 'en', getProfile(phone)));
   return userSessions.get(phone);
 }
-function newSession(name, lang) {
+function newSession(name, lang, profile) {
   return {
-    contractorName: name, lang: lang || 'en', stage: 'new', // new | collect | confirm | changing | building | done
-    data: freshData(), images: [], skipped: new Set(), tries: {}, awaiting: null, extrasDone: false, photoTipSent: false,
+    contractorName: name, lang: lang || 'en', stage: 'new', // new | collect | confirm | changing | setup | building | done
+    profile: profile || null, data: freshData(profile), images: [], skipped: new Set(), tries: {}, awaiting: null, extrasDone: false, photoTipSent: false,
     report: null, photoTimer: null, quoteNumber: `Q-${Math.floor(100000 + Math.random() * 900000)}`, queue: Promise.resolve()
   };
 }
@@ -334,7 +391,11 @@ const isRepair = (s) => s.data.job_type === 'repair';
 const tierPrices = (s) => ['good', 'better', 'best'].map((k) => s.data.tiers[k].price);
 const pricesComplete = (s) => (isRepair(s)
   ? Boolean((s.data.repair.items && s.data.repair.items.length) || s.data.repair.total_price != null)
-  : tierPrices(s).every((p) => p != null));
+  : tierPrices(s).some((p) => p != null));
+const activeTierKeys = (s) => {
+  const keys = ['good', 'better', 'best'].filter((k) => s.data.tiers[k].price != null);
+  return keys.length ? keys : ['good'];
+};
 
 // =============================================================================
 // 5. THE QUESTIONS, IN ORDER
@@ -358,7 +419,7 @@ function blanks(s) {
   if (!d.roof_area_sqft) out.push(tx(s, 'blankArea'));
   if (!pricesComplete(s)) out.push(tx(s, 'blankPrices'));
   if (!isRepair(s)) {
-    const ts = ['good', 'better', 'best'].map((k) => d.tiers[k]);
+    const ts = ['good', 'better', 'best'].map((k) => d.tiers[k]).filter((t) => t.price != null);
     if (ts.some((t) => !t.shingle)) out.push(tx(s, 'blankShingles'));
     if (ts.some((t) => t.labor_years == null)) out.push(tx(s, 'blankYears'));
     if (ts.some((t) => !t.mfr_warranty)) out.push(tx(s, 'blankMfr'));
@@ -378,7 +439,7 @@ function summary(s) {
     if (r.items && r.items.length) lines.push(`${tx(s, 'lblPrices')} ` + r.items.map((i) => `${i.name}${i.price != null ? ' ' + money(i.price) : ''}`).join(' · '));
     if (r.total_price != null) lines.push(`${tx(s, 'lblPrices')} Total ${money(r.total_price)}`);
   } else if (tierPrices(s).some((p) => p != null)) {
-    lines.push(`${tx(s, 'lblPrices')} ` + tx(s, 'tierWords').map((w, i) => `${w} ${tierPrices(s)[i] != null ? money(tierPrices(s)[i]) : '—'}`).join(' · '));
+    lines.push(`${tx(s, 'lblPrices')} ` + tx(s, 'tierWords').map((w, i) => (tierPrices(s)[i] != null ? `${w} ${money(tierPrices(s)[i])}` : null)).filter(Boolean).join(' · '));
   }
   if (d.discount && d.discount !== 'none') lines.push(`${tx(s, 'lblDiscount')} ${d.discount.pct}% ${d.discount.name || ''}`.trim());
   lines.push(`${tx(s, 'lblPhotos')} ${tx(s, 'photosWord', s.images.length)}`);
@@ -402,14 +463,12 @@ async function advance(s, to) {
     case 'source': return sendButtons(to, tx(s, 'qSource'), [{ id: 'src:retail', title: btn(s, 'retail') }, { id: 'src:insurance', title: btn(s, 'insurance') }]);
     case 'claim': return sendButtons(to, tx(s, 'qClaim'), [skipBtn]);
     case 'area': return sendButtons(to, tx(s, 'qArea') + tip, [skipBtn]);
-    case 'price': {
-      if (isRepair(s)) return sendButtons(to, tx(s, 'qPriceRpr'), [skipBtn]);
-      const words = tx(s, 'tierWords');
-      const missing = tierPrices(s).map((p, i) => (p == null ? words[i] : null)).filter(Boolean);
-      const some = missing.length < 3;
-      return sendButtons(to, some ? tx(s, 'qPriceMore', missing.join(' / ')) : tx(s, 'qPriceRep'), [skipBtn]);
+    case 'price':
+      return sendButtons(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep'), [skipBtn]);
+    case 'extras': {
+      const known = s.profile && s.profile.tiers && s.profile.tiers.good && s.profile.tiers.good.shingle;
+      return sendButtons(to, tx(s, known ? 'qExtrasProfile' : 'qExtras'), [{ id: 'extras:none', title: btn(s, 'nothing') }]);
     }
-    case 'extras': return sendButtons(to, tx(s, 'qExtras'), [{ id: 'extras:none', title: btn(s, 'nothing') }]);
     default: return showConfirm(s, to);
   }
 }
@@ -421,7 +480,10 @@ async function showConfirm(s, to) {
   }
   s.stage = 'confirm';
   s.awaiting = 'confirm';
-  return sendButtons(to, summary(s), [{ id: 'build', title: btn(s, 'build') }, { id: 'change', title: btn(s, 'change') }]);
+  const confirmBtns = [{ id: 'build', title: btn(s, 'build') }];
+  if (blanks(s).length) confirmBtns.push({ id: 'add', title: btn(s, 'add') });
+  confirmBtns.push({ id: 'change', title: btn(s, 'change') });
+  return sendButtons(to, summary(s), confirmBtns);
 }
 
 // =============================================================================
@@ -463,9 +525,10 @@ async function buildReportData(s) {
 function applyIntake(d, s) {
   const D = s.data;
   d.meta = d.meta || {};
-  d.meta.company = COMPANY_NAME || s.contractorName;
-  d.meta.companyAddress = COMPANY_ADDRESS;
-  d.meta.rep = REP_NAME;
+  const P = s.profile || {};
+  d.meta.company = P.company || COMPANY_NAME || s.contractorName;
+  d.meta.companyAddress = P.companyAddress || COMPANY_ADDRESS;
+  d.meta.rep = P.rep || REP_NAME;
   d.meta.date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   d.meta.dateLabel = d.meta.dateLabel || 'Report date';
   d.meta.theme = themeOf(D.report_theme) || themeOf(REPORT_THEME) || 'auto';
@@ -494,9 +557,10 @@ function applyIntake(d, s) {
     d.options = [];
     delete d.scopeRefs;
   } else {
-    d.options = ['good', 'better', 'best'].map((k) => {
+    d.options = activeTierKeys(s).map((k) => {
       const t = D.tiers[k];
       return {
+        name: k.charAt(0).toUpperCase() + k.slice(1),
         shingle: t.shingle || null, listPrice: t.price != null ? t.price : null, laborYears: t.labor_years != null ? t.labor_years : null,
         mfrWarranty: t.mfr_warranty ? `${makerOf(t.shingle) ? makerOf(t.shingle) + ' ' : ''}${String(t.mfr_warranty).toLowerCase().replace(/ ?manufacturer warranty| ?warranty/g, '')} manufacturer warranty` : null,
         mfrShort: t.mfr_warranty ? mfrShort(t.mfr_warranty) : null
@@ -551,6 +615,11 @@ async function doBuild(s, to, host) {
     await sendButtons(to, tx(s, 'ready', url), [{ id: 'change', title: btn(s, 'edit') }, { id: 'newquote', title: btn(s, 'newq') }]);
     await sendDocument(to, url, fileName, `Estimate Proposal ${s.quoteNumber}`);
     if (d.flags.length) await sendText(to, `${tx(s, 'notes')}\n- ${d.flags.join('\n- ')}`);
+    const pr = getProfile(to);
+    if (!pr || !pr.offered) {
+      saveProfile(to, { ...(pr || {}), offered: true });
+      await sendButtons(to, tx(s, 'offerSetup'), [{ id: 'setup', title: btn(s, 'setupNow') }, { id: 'setup:later', title: btn(s, 'notNow') }]);
+    }
   } catch (err) {
     console.error('❌ Report build error:', err);
     s.stage = 'confirm';
@@ -564,10 +633,11 @@ async function doBuild(s, to, host) {
 const SKIP_RE = /^(skip|omitir|saltar|no|none|nothing|nope|n\/a|nada|ninguno|no sé|no se|i don'?t know|idk|dont know)\.?$/i;
 const BUILD_RE = /^(generate|build|done|send it|create|genera|generar|listo|crear)( it| report| quote)?\.?$/i;
 const NEW_RE = /^(new quote|new|start over|reset|nueva cotizaci[oó]n|nueva|empezar de nuevo)\.?$/i;
+const SETUP_RE = /^(setup|set up|settings|profile|my settings|configurar|ajustes|perfil)$/i;
 const GREET_RE = /^(hi|hello|hey|hola|start|empezar|buenas|buenos d[ií]as)\b[\s!.,]*$/i;
 
 async function startOver(s, to, phone) {
-  const fresh = newSession(s.contractorName, s.lang);
+  const fresh = newSession(s.contractorName, s.lang, getProfile(phone));
   fresh.stage = 'collect';
   fresh.queue = s.queue;
   userSessions.set(phone, fresh);
@@ -586,6 +656,10 @@ async function skipCurrent(s, to) {
 }
 
 async function onButton(s, to, id, host, phone) {
+  if (id === 'setup') return startSetup(s, to);
+  if (id === 'setup:later') return sendText(to, tx(s, 'okay'));
+  if (s.stage === 'setup') return setupButton(s, to, id);
+  if (id === 'add') { s.stage = 'changing'; s.awaiting = 'change'; return sendText(to, tx(s, 'qAdd')); }
   if (id === 'newquote') return startOver(s, to, phone);
   if (id === 'build') return doBuild(s, to, host);
   if (id === 'change') { s.stage = 'changing'; s.awaiting = 'change'; return sendText(to, tx(s, 'qChange')); }
@@ -602,6 +676,8 @@ async function onText(s, to, text, host, phone) {
   const low = text.trim().toLowerCase();
 
   if (NEW_RE.test(low)) return startOver(s, to, phone);
+  if (SETUP_RE.test(low)) return startSetup(s, to);
+  if (s.stage === 'setup') return setupText(s, to, text);
   if (s.stage === 'new') {
     s.stage = 'collect';
     if (GREET_RE.test(low)) { await sendText(to, tx(s, 'hello', firstName(s.contractorName))); return; }
@@ -668,6 +744,110 @@ async function photosSettled(s, to) {
   return advance(s, to);
 }
 
+// ----- One-time setup: company, usual shingles and warranties, how you get paid, look of the reports -----
+const SETUP_ORDER = ['setup_company', 'setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_pay', 'setup_theme'];
+
+async function startSetup(s, to) {
+  s.prevStage = s.stage === 'setup' ? s.prevStage : s.stage;
+  s.stage = 'setup';
+  s.draft = JSON.parse(JSON.stringify(s.profile || {}));
+  s.draft.tiers = s.draft.tiers || { good: {}, better: {}, best: {} };
+  s.awaiting = SETUP_ORDER[0];
+  await sendText(to, tx(s, 'setupIntro'));
+  return askSetup(s, to);
+}
+
+function askSetup(s, to) {
+  const skip = { id: 'skip', title: btn(s, 'skip') };
+  switch (s.awaiting) {
+    case 'setup_company': return sendButtons(to, tx(s, 'sCompany'), [skip]);
+    case 'setup_rep': return sendButtons(to, tx(s, 'sRep'), [skip]);
+    case 'setup_shingles': return sendButtons(to, tx(s, 'sShingles'), [skip]);
+    case 'setup_years': return sendButtons(to, tx(s, 'sYears'), [skip]);
+    case 'setup_mfr': return sendButtons(to, tx(s, 'sMfr'), [skip]);
+    case 'setup_pay': return sendButtons(to, tx(s, 'sPay'), [{ id: 'pay:standard', title: btn(s, 'payStandard') }, { id: 'pay:poc', title: btn(s, 'payPoc') }, skip]);
+    default: return sendButtons(to, tx(s, 'sTheme'), [{ id: 'theme:auto', title: btn(s, 'themeAuto') }, { id: 'theme:dark', title: btn(s, 'themeDark') }, { id: 'theme:blush', title: btn(s, 'themeBlush') }]);
+  }
+}
+
+async function setupNext(s, to) {
+  const i = SETUP_ORDER.indexOf(s.awaiting);
+  if (i + 1 >= SETUP_ORDER.length) return finishSetup(s, to);
+  s.awaiting = SETUP_ORDER[i + 1];
+  return askSetup(s, to);
+}
+
+async function setupText(s, to, text) {
+  const t = text.trim();
+  if (SKIP_RE.test(t.toLowerCase())) return setupNext(s, to);
+  if (s.awaiting === 'setup_company') { s.draft.company = t.slice(0, 80); return setupNext(s, to); }
+  if (s.awaiting === 'setup_rep') { s.draft.rep = t.slice(0, 60); return setupNext(s, to); }
+  if (['setup_shingles', 'setup_years', 'setup_mfr'].includes(s.awaiting)) {
+    const ex = await extract(s, text);
+    const tiers = ex.updates.tiers || {};
+    Object.keys(tiers).forEach((k) => { if (tiers[k]) delete tiers[k].price; });
+    merge(s.draft.tiers, tiers);
+    return setupNext(s, to);
+  }
+  if (s.awaiting === 'setup_pay') { s.draft.payment = { mode: /complet|poc|done|termin/i.test(t) ? 'on_completion' : 'standard' }; return setupNext(s, to); }
+  const th = themeOf(t);
+  if (th) s.draft.theme = th;
+  return setupNext(s, to);
+}
+
+async function setupButton(s, to, id) {
+  if (id === 'skip') return setupNext(s, to);
+  if (id.startsWith('pay:')) s.draft.payment = { mode: id === 'pay:poc' ? 'on_completion' : 'standard' };
+  if (id.startsWith('theme:')) s.draft.theme = id.split(':')[1];
+  return setupNext(s, to);
+}
+
+async function finishSetup(s, to) {
+  const profile = { ...s.draft, offered: true };
+  saveProfile(to, profile);
+  s.profile = profile;
+  // Fill any blanks in the current job from the new defaults (typed values stay)
+  const defaults = freshData(profile);
+  ['good', 'better', 'best'].forEach((k) => {
+    ['shingle', 'labor_years', 'mfr_warranty'].forEach((f) => { if (s.data.tiers[k][f] == null && defaults.tiers[k][f] != null) s.data.tiers[k][f] = defaults.tiers[k][f]; });
+  });
+  if (!s.data.payment.mode && defaults.payment.mode) s.data.payment = defaults.payment;
+  if (!s.data.report_theme && defaults.report_theme) s.data.report_theme = defaults.report_theme;
+  s.stage = !s.prevStage || s.prevStage === 'new' ? 'collect' : s.prevStage;
+  s.awaiting = null;
+  await sendText(to, tx(s, 'setupDone'));
+  if (s.stage === 'collect' && s.data.customer_name_and_address) return advance(s, to);
+  return null;
+}
+
+// ----- Voice notes: Gemini turns the audio into text, then it is handled like a typed message -----
+async function fetchMedia(mediaId) {
+  const res = await fetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } });
+  const data = await res.json();
+  if (!data.url) throw new Error('No media URL returned by Meta');
+  const r = await fetch(data.url, { headers: { Authorization: `Bearer ${waToken}` } });
+  return { buffer: Buffer.from(await r.arrayBuffer()), mime: data.mime_type || 'audio/ogg' };
+}
+
+async function transcribe(media) {
+  const data = await callGemini({
+    system: 'You transcribe a short voice note from a roofing contractor. Return ONLY JSON: {"text": "<verbatim transcript>"}. Keep the original language. If you cannot make out any speech, return {"text": ""}.',
+    parts: [{ inline_data: { mime_type: media.mime.split(';')[0], data: media.buffer.toString('base64') } }, { text: 'Transcribe this voice note.' }],
+    temperature: 0
+  });
+  const raw = geminiText(data);
+  if (!raw) return '';
+  try { return String(parseJsonText(raw).text || '').trim(); } catch (e) { return ''; }
+}
+
+async function onAudio(s, to, message, host, phone) {
+  let text = '';
+  try { text = await transcribe(await fetchMedia(message.audio.id)); } catch (err) { console.error('❌ Audio error:', err); }
+  if (!text) return sendText(to, tx(s, 'voiceFail'));
+  await sendText(to, tx(s, 'heard', text));
+  return onText(s, to, text, host, phone);
+}
+
 // =============================================================================
 // 8. WEBHOOK
 // =============================================================================
@@ -704,6 +884,9 @@ app.post('/', async (req, res) => {
       } else if (message.type === 'image') {
         console.log(`📸 Image from ${name}`);
         await onImage(s, phone, message);
+      } else if (message.type === 'audio') {
+        console.log(`🎤 Voice note from ${name}`);
+        await onAudio(s, phone, message, host, phone);
       } else {
         await sendText(phone, tx(s, 'voice'));
       }
