@@ -299,8 +299,9 @@ function render(d){
  const st=(b,s,sm)=>`<div><b>${b}</b><span>${s}</span><small>${sm}</small></div>`;
  const stats=MS?st(photos,'roof photographs','every problem shown')+st(AN,'sq ft of roof',esc(M.areaNote||M.measureSource||''))+st(esc(M.pitch||'—'),'predominant pitch',esc(M.pitchNote||((M.facets||'—')+' roof facets')))
    :st(photos,'roof photographs','every problem shown')+st(F.length,'findings','each with its fix')+st(AN,'sq ft of roof',esc(M.roofNote||''));
- const cond=({serviceable:0,monitor:1,end_of_life:2})[V.condition]??2;
+ const cond=({serviceable:0,monitor:1,end_of_life:2})[V.condition];
  const bar=['Serviceable','Monitor','End of life'].map((x,i)=>`<div class="${i==cond?'on':''}"><i></i>${x}</div>`).join('');
+ const meterBlock=cond==null?'':`<div class="lab">Condition of the shingle field</div><div class="bar">${bar}</div>`;
  const h=F[0]||{};
  const usedG=new Set(d.glance&&d.glance.length?[]:[String(h.photoId)]);
  let gl=(d.glance&&d.glance.length?d.glance.map(n=>F[n-1]):F.slice(1)).filter(f=>f&&(d.glance&&d.glance.length||f!==h));
@@ -373,7 +374,7 @@ function render(d){
  const scopeSec=(ONE&&GRP.length)?`<section><div class="w">${rh('Itemised')}<h2>Every line, itemised</h2><p>${esc(d.itemIntro||'Each line is tied to the finding that calls for it.')}</p><div class="tw"><table><tr><th>#</th><th>Item</th><th>Quantity</th><th>Findings</th><th>Price</th></tr>${sRows}${D?`<tr class="tot"><td></td><td>List price</td><td></td><td></td><td>${money(PR[0].L)}</td></tr><tr><td></td><td>${esc(cap(D.name))} discount (${esc(D.pct)}%)</td><td></td><td></td><td>${PR[0].disc==null?'$ —':'−'+money(PR[0].disc)}</td></tr>`:''}<tr class="tot"><td></td><td>${GRP.length>1?'Price, all areas':(D?'Your price':'Price')}</td><td></td><td></td><td>${money(PR[0].p)}</td></tr></table></div>${d.itemNote?`<p style="font-size:14px;color:var(--slate)"><i>${esc(d.itemNote)}</i></p>`:''}</div></section>`:itemSec;
  document.title=`Roof Condition Report · ${M.addressLine1||''}`;
  $('app').innerHTML=`<header class="dark cover ${coverSrc?'':'nophoto'}"><div class="w cw">${brandrow}<div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep)+', ':''}${co}</b></div>${M.claimNumber?`<div class="lab">Claim number<b>${esc(M.claimNumber)}</b></div>`:''}</div><div class="ct"><div class="lab kick">Roof condition report · ${esc(M.product||(REPAIR?'Roof repair':'Shingle roof replacement'))}${M.leadSource==='insurance'?' · Insurance claim':''}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div></div>${coverSrc?`<img class="bgimg" src="${esc(coverSrc)}" alt="">`:''}</header>
- <section><div class="w">${rh('At a glance')}<h2>At a glance</h2><div class="stats">${stats}</div><div class="lab">Condition of the shingle field</div><div class="bar">${bar}</div><div class="call"><div class="lab" style="color:var(--sig)">The one thing to know</div><h3>${esc(V.headline)}</h3><p>${esc(V.paragraph)}</p></div>${glance}</div></section>
+ <section><div class="w">${rh('At a glance')}<h2>At a glance</h2><div class="stats">${stats}</div>${meterBlock}<div class="call"><div class="lab" style="color:var(--sig)">The one thing to know</div><h3>${esc(V.headline)}</h3><p>${esc(V.paragraph)}</p></div>${glance}</div></section>
  ${hero}<section><div class="w">${rh('Findings')}${cards}</div></section>${rs}
  <section style="padding-top:0"><div class="w">${rh('Problems and solutions')}<h2>Problems and solutions</h2><p>Every problem found, what fixes it, in order of priority${BLD.length>1?', by building':''}.</p><div>${psNew}</div></div></section>${msPage}${sim}
  ${REPAIR?rq:priceSec}

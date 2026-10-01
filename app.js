@@ -120,6 +120,10 @@ const TXT = {
     measureFail: "I couldn't read that file. Please send the measurement report as a PDF again, or just type the roof area.",
     pdfOnly: 'I can only read PDF reports. Please send the measurement report as a PDF.',
     lblMeasure: '📐', facetsWord: 'facets',
+    qCondition: 'How would you rate the condition of the shingle field?',
+    lblCondition: '🔎',
+    condWords: { serviceable: 'Serviceable', monitor: 'Monitor', end_of_life: 'End of life' },
+    blankCondition: 'shingle condition',
     qStories: 'How many stories is the house?',
     qLeaks: 'Has the homeowner reported any leaks?',
     nudge: '👆 Tap one of the buttons, or type your answer.',
@@ -132,7 +136,7 @@ const TXT = {
     sLicense: "What's your license number?",
     sColor: 'Brand color? Tap one, or type a code like #1A5FB4.',
     sLogo: 'Send your logo as an image.',
-    btn: { addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    btn: { serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
@@ -186,6 +190,10 @@ const TXT = {
     measureFail: 'No pude leer ese archivo. Envía el informe de medición en PDF otra vez, o escribe el área del techo.',
     pdfOnly: 'Solo puedo leer informes en PDF. Envía el informe de medición como PDF.',
     lblMeasure: '📐', facetsWord: 'facetas',
+    qCondition: '¿Cómo calificas el estado de las tejas?',
+    lblCondition: '🔎',
+    condWords: { serviceable: 'Aceptable', monitor: 'Vigilar', end_of_life: 'Fin de vida' },
+    blankCondition: 'estado de las tejas',
     qStories: '¿Cuántos pisos tiene la casa?',
     qLeaks: '¿El dueño ha reportado goteras?',
     nudge: '👆 Toca uno de los botones, o escribe tu respuesta.',
@@ -198,7 +206,7 @@ const TXT = {
     sLicense: '¿Cuál es tu número de licencia?',
     sColor: '¿Color de tu marca? Toca uno, o escribe un código como #1A5FB4.',
     sLogo: 'Envía tu logo como imagen.',
-    btn: { addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeAuto: 'Auto', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    btn: { serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeAuto: 'Auto', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -313,6 +321,7 @@ lead_source: "retail" or "insurance"; claim_number: string
 roof_area_sqft: number (1 roofing "square" = 100 sq ft)
 building_stories, current_roof_and_condition, site_notes: strings
 leaks: "yes", "no" or "unknown" (has the homeowner reported leaks)
+condition: "serviceable", "monitor" or "end_of_life" ONLY if the contractor explicitly rates the shingle field (e.g. "roof is shot" = end_of_life, "still fine" = serviceable, "aging" = monitor)
 pitch: string like "6/12" only if stated
 tiers: {"good":{"shingle","price","labor_years","mfr_warranty"},"better":{...},"best":{...}}
   price = number ("15k" = 15000); labor_years = number; shingle = brand and product line exactly as written; mfr_warranty = e.g. "limited lifetime" or "50-year".
@@ -359,6 +368,7 @@ function cleanUpdates(u) {
   }
   if (out.payment) { out.payment.deposit = toNum(out.payment.deposit); out.payment.deposit_pct = toNum(out.payment.deposit_pct); }
   if (out.leaks) out.leaks = /^(y|s[ií]\b|yes|true)/i.test(out.leaks) ? 'yes' : /^(n|none|false)/i.test(out.leaks) ? 'no' : 'unknown';
+  if (out.condition) out.condition = ['serviceable', 'monitor', 'end_of_life'].includes(out.condition) ? out.condition : undefined;
   if (out.job_type) out.job_type = /repair/i.test(out.job_type) && !/replac/i.test(out.job_type) ? 'repair' : 'replacement';
   if (out.lead_source) out.lead_source = /insur/i.test(out.lead_source) ? 'insurance' : 'retail';
   if (out.report_theme) out.report_theme = themeOf(out.report_theme) || undefined;
@@ -399,7 +409,7 @@ async function extract(s, text) {
 function freshData(profile) {
   const d = {
     customer_name_and_address: null, job_type: null, lead_source: null, claim_number: null,
-    leaks: null, roof_area_sqft: null, building_stories: null, current_roof_and_condition: null, site_notes: null, pitch: null,
+    leaks: null, condition: null, roof_area_sqft: null, building_stories: null, current_roof_and_condition: null, site_notes: null, pitch: null,
     tiers: { good: {}, better: {}, best: {} },
     repair: { items: null, total_price: null, labor_years: null },
     discount: null,
@@ -456,6 +466,7 @@ function nextQuestion(s) {
   if (!d.roof_area_sqft && !s.skipped.has('area')) return 'area';
   if (!d.building_stories && !s.skipped.has('stories')) return 'stories';
   if (!d.leaks && !s.skipped.has('leaks')) return 'leaks';
+  if (!d.condition && !s.skipped.has('condition')) return 'condition';
   if (!pricesComplete(s) && !s.skipped.has('price')) return 'price';
   if (!s.extrasDone) return 'extras';
   return 'confirm';
@@ -467,6 +478,7 @@ function blanks(s) {
   const d = s.data; const out = [];
   if (!d.roof_area_sqft) out.push(tx(s, 'blankArea'));
   if (!pricesComplete(s)) out.push(tx(s, 'blankPrices'));
+  if (!d.condition) out.push(tx(s, 'blankCondition'));
   if (!isRepair(s)) {
     const ts = ['good', 'better', 'best'].map((k) => d.tiers[k]).filter((t) => t.price != null);
     if (ts.some((t) => !t.shingle)) out.push(tx(s, 'blankShingles'));
@@ -488,6 +500,7 @@ function measureLine(s) {
 function extraLines(s) {
   const d = s.data; const out = [];
   if (d.measurement) out.push(`${tx(s, 'lblMeasure')} ${measureLine(s)}`);
+  if (d.condition) out.push(`${tx(s, 'lblCondition')} ${tx(s, 'condWords')[d.condition]}`);
   if (d.leaks) out.push(`${tx(s, 'lblLeaks')} ${tx(s, d.leaks === 'yes' ? 'leaksYes' : d.leaks === 'no' ? 'leaksNo' : 'leaksUnknown')}`);
   const shingles = [...new Set(['good', 'better', 'best'].map((k) => d.tiers[k].shingle).filter(Boolean))];
   if (!isRepair(s) && shingles.length) out.push(`${tx(s, 'lblShingle')} ${shingles.join(' / ')}`);
@@ -538,6 +551,7 @@ async function advance(s, to) {
     case 'area': return sendButtons(to, tx(s, 'qArea') + tip, [skipBtn]);
     case 'stories': return sendButtons(to, tx(s, 'qStories'), [{ id: 'st:1', title: btn(s, 'story1') }, { id: 'st:2', title: btn(s, 'story2') }, skipBtn]);
     case 'leaks': return sendButtons(to, tx(s, 'qLeaks'), [{ id: 'lk:yes', title: btn(s, 'yes') }, { id: 'lk:no', title: btn(s, 'no') }, { id: 'lk:unknown', title: btn(s, 'unsure') }]);
+    case 'condition': return sendButtons(to, tx(s, 'qCondition'), [{ id: 'cd:serviceable', title: btn(s, 'serviceable') }, { id: 'cd:monitor', title: btn(s, 'monitor') }, { id: 'cd:end_of_life', title: btn(s, 'endOfLife') }]);
     case 'price':
       return sendButtons(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep'), [skipBtn]);
     case 'extras': {
@@ -611,6 +625,8 @@ function applyIntake(d, s) {
   d.meta.product = isRepair(s) ? 'Roof repair' : 'Shingle roof replacement';
   d.meta.areaSqFt = D.roof_area_sqft || '';
   d.meta.pitch = D.pitch || null;
+  d.verdict = d.verdict || {};
+  if (D.condition) d.verdict.condition = D.condition; else delete d.verdict.condition; // the contractor decides; no rating means no meter
   d.meta.leadSource = D.lead_source || 'retail';
   d.meta.claimNumber = D.lead_source === 'insurance' ? D.claim_number || '' : '';
   let logo = '';
@@ -695,6 +711,11 @@ async function doBuild(s, to, host) {
     QUOTES[token] = { phone: to, quoteNumber: s.quoteNumber, address: d.meta.addressLine1 || '', created: Date.now() };
     saveQuotes();
     if (!(d.findings || []).length) throw new Error('No findings written');
+    if (!s.data.condition) d.flags.push('NOTE: The shingle condition was not rated, so the condition meter is hidden.');
+    const said = `${(d.verdict && d.verdict.headline) || ''} ${(d.verdict && d.verdict.paragraph) || ''}`;
+    if (s.data.condition && s.data.condition !== 'end_of_life' && /end of (its )?life|worn through|beyond repair/i.test(said)) {
+      d.flags.push(`CHECK: You rated the shingles "${s.data.condition === 'monitor' ? 'Monitor' : 'Serviceable'}", but the summary text sounds more severe. Read "The one thing to know" before sending.`);
+    }
     const b = blanks(s);
     if (b.length) d.flags.push(`DRAFT: still blank: ${b.join(', ')}.`);
     s.report = JSON.parse(JSON.stringify(d, (k, v) => (k === 'photoSrc' || k === 'coverPhotoSrc' || k === 'logo' ? undefined : v)));
@@ -756,6 +777,11 @@ async function quickAnswer(s, to, low) {
       if (/^(no|nope|none|nada)\b/.test(low)) { s.data.leaks = 'no'; return done(); }
       if (/(not sure|unknown|no s[eé]|don'?t know|idk)/.test(low)) { s.data.leaks = 'unknown'; return done(); }
       return words <= 3 ? nudge() : false;
+    case 'condition':
+      if (/serv|good|fine|ok\b|aceptable|bien/.test(low)) { s.data.condition = 'serviceable'; return done(); }
+      if (/monitor|fair|aging|watch|vigil|regular/.test(low)) { s.data.condition = 'monitor'; return done(); }
+      if (/end|shot|worn|dead|bad|fin de vida|mal/.test(low)) { s.data.condition = 'end_of_life'; return done(); }
+      return words <= 3 ? nudge() : false;
     case 'extras':
       return bare ? nudge() : false;
     default:
@@ -784,7 +810,7 @@ async function skipCurrent(s, to) {
   switch (s.awaiting) {
     case 'source': s.data.lead_source = 'retail'; break;
     case 'extras': s.extrasDone = true; break;
-    case 'claim': case 'area': case 'price': case 'stories': case 'leaks': s.skipped.add(s.awaiting); break;
+    case 'claim': case 'area': case 'price': case 'stories': case 'leaks': case 'condition': s.skipped.add(s.awaiting); break;
     case 'addr': case 'type': return sendText(to, tx(s, 'needThis'));
     default: break;
   }
@@ -801,8 +827,9 @@ async function onButton(s, to, id, host, phone) {
   if (id === 'change') { s.stage = 'changing'; s.awaiting = 'change'; return sendText(to, tx(s, 'qChange')); }
   if (id === 'skip') return skipCurrent(s, to);
   if (id === 'extras:none') { s.extrasDone = true; return advance(s, to); }
-  const needs = { 'type:': 'type', 'src:': 'source', 'st:': 'stories', 'lk:': 'leaks' };
+  const needs = { 'type:': 'type', 'src:': 'source', 'st:': 'stories', 'lk:': 'leaks', 'cd:': 'condition' };
   for (const [prefix, q] of Object.entries(needs)) if (id.startsWith(prefix) && s.awaiting !== q) return null; // an old button: ignore
+  if (id.startsWith('cd:')) s.data.condition = id.slice(3);
   if (id === 'type:replacement' || id === 'type:repair') s.data.job_type = id.split(':')[1];
   if (id === 'st:1' || id === 'st:2') s.data.building_stories = id === 'st:1' ? '1 story' : '2 stories';
   if (id.startsWith('lk:')) s.data.leaks = id.split(':')[1];
