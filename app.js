@@ -56,6 +56,14 @@ function saveProfile(phone, p) {
   try { fs.writeFileSync(PROFILE_FILE, JSON.stringify(PROFILES, null, 2)); } catch (e) { console.error('❌ Could not save profile:', e.message); }
 }
 
+// Every report gets a secret token so the customer's "Accept" can be matched to the right quote and contractor.
+const QUOTES_FILE = path.join(DATA_DIR, 'quotes.json');
+let QUOTES = {};
+try { QUOTES = JSON.parse(fs.readFileSync(QUOTES_FILE, 'utf8')); } catch (e) { QUOTES = {}; }
+function saveQuotes() {
+  try { fs.writeFileSync(QUOTES_FILE, JSON.stringify(QUOTES)); } catch (e) { console.error('❌ Could not save quotes:', e.message); }
+}
+
 // =============================================================================
 // 1. CONVERSATION TEXT. Edit the words here; buttons are max 20 characters.
 // =============================================================================
@@ -106,7 +114,19 @@ const TXT = {
     sPay: 'How do you usually get paid?',
     sTheme: 'Which look do you like for your reports?',
     setupDone: '✅ Saved! I will use these on every quote. Type "setup" any time to change them.',
-    btn: { add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    qStories: 'How many stories is the house?',
+    qLeaks: 'Has the homeowner reported any leaks?',
+    nudge: '👆 Tap one of the buttons, or type your answer.',
+    lblPay: '💳', lblTime: '⏱', lblWarranty: '🛡', lblShingle: '🧱', lblLeaks: '💧',
+    payCompletion: 'Pay on completion', payDepositBalance: 'Deposit + balance', payStages: 'Deposit + stages',
+    upTo: (n) => `Up to ${n} days`, workmanship: 'Workmanship', yrsWord: 'yrs',
+    leaksYes: 'Leaks reported', leaksNo: 'No leaks reported', leaksUnknown: 'Leaks: not sure',
+    sBrand: 'Want to add your phone number, license number and logo? Customers will see them on the report.',
+    sPhone: 'What phone number can customers call or WhatsApp?',
+    sLicense: "What's your license number?",
+    sColor: 'Brand color? Tap one, or type a code like #1A5FB4.',
+    sLogo: 'Send your logo as an image.',
+    btn: { addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección.`,
@@ -154,7 +174,19 @@ const TXT = {
     sPay: '¿Cómo sueles cobrar?',
     sTheme: '¿Qué estilo prefieres para tus informes?',
     setupDone: '✅ ¡Guardado! Lo usaré en cada cotización. Escribe "setup" cuando quieras cambiarlo.',
-    btn: { add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeAuto: 'Auto', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    qStories: '¿Cuántos pisos tiene la casa?',
+    qLeaks: '¿El dueño ha reportado goteras?',
+    nudge: '👆 Toca uno de los botones, o escribe tu respuesta.',
+    lblPay: '💳', lblTime: '⏱', lblWarranty: '🛡', lblShingle: '🧱', lblLeaks: '💧',
+    payCompletion: 'Pago al terminar', payDepositBalance: 'Depósito + saldo', payStages: 'Depósito + etapas',
+    upTo: (n) => `Hasta ${n} días`, workmanship: 'Mano de obra', yrsWord: 'años',
+    leaksYes: 'Hay goteras', leaksNo: 'Sin goteras', leaksUnknown: 'Goteras: no sé',
+    sBrand: '¿Quieres agregar tu teléfono, número de licencia y logo? Los clientes los verán en el informe.',
+    sPhone: '¿Qué número pueden llamar o escribir por WhatsApp los clientes?',
+    sLicense: '¿Cuál es tu número de licencia?',
+    sColor: '¿Color de tu marca? Toca uno, o escribe un código como #1A5FB4.',
+    sLogo: 'Envía tu logo como imagen.',
+    btn: { addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeAuto: 'Auto', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -259,6 +291,7 @@ RULES:
 - Put into "updates" ONLY what the message actually states. Never guess, never invent, never fill in typical values.
 - Translate every text value into professional English. "language" is the language the contractor wrote in.
 - "awaiting" tells you which question the contractor is answering. A bare answer belongs to that question.
+- A bare number is NEVER a price unless awaiting is "price", and never an area unless awaiting is "area". When in doubt, leave it out.
 - intent "skip": they decline or don't know ("skip", "no", "none", "I don't know", "n/a") with nothing else useful. intent "build": they ask to generate/send/finish ("generate", "that's all, build it"). intent "new_quote": they want to start a different job. Otherwise "answer".
 
 FIELDS (all optional):
@@ -267,6 +300,7 @@ job_type: "replacement" (full roof replacement / tear-off) or "repair"
 lead_source: "retail" or "insurance"; claim_number: string
 roof_area_sqft: number (1 roofing "square" = 100 sq ft)
 building_stories, current_roof_and_condition, site_notes: strings
+leaks: "yes", "no" or "unknown" (has the homeowner reported leaks)
 pitch: string like "6/12" only if stated
 tiers: {"good":{"shingle","price","labor_years","mfr_warranty"},"better":{...},"best":{...}}
   price = number ("15k" = 15000); labor_years = number; shingle = brand and product line exactly as written; mfr_warranty = e.g. "limited lifetime" or "50-year".
@@ -312,6 +346,7 @@ function cleanUpdates(u) {
     if (out.discount.pct == null) delete out.discount;
   }
   if (out.payment) { out.payment.deposit = toNum(out.payment.deposit); out.payment.deposit_pct = toNum(out.payment.deposit_pct); }
+  if (out.leaks) out.leaks = /^(y|s[ií]\b|yes|true)/i.test(out.leaks) ? 'yes' : /^(n|none|false)/i.test(out.leaks) ? 'no' : 'unknown';
   if (out.job_type) out.job_type = /repair/i.test(out.job_type) && !/replac/i.test(out.job_type) ? 'repair' : 'replacement';
   if (out.lead_source) out.lead_source = /insur/i.test(out.lead_source) ? 'insurance' : 'retail';
   if (out.report_theme) out.report_theme = themeOf(out.report_theme) || undefined;
@@ -352,7 +387,7 @@ async function extract(s, text) {
 function freshData(profile) {
   const d = {
     customer_name_and_address: null, job_type: null, lead_source: null, claim_number: null,
-    roof_area_sqft: null, building_stories: null, current_roof_and_condition: null, site_notes: null, pitch: null,
+    leaks: null, roof_area_sqft: null, building_stories: null, current_roof_and_condition: null, site_notes: null, pitch: null,
     tiers: { good: {}, better: {}, best: {} },
     repair: { items: null, total_price: null, labor_years: null },
     discount: null,
@@ -407,6 +442,8 @@ function nextQuestion(s) {
   if (!d.lead_source && !s.skipped.has('source')) return 'source';
   if (d.lead_source === 'insurance' && !d.claim_number && !s.skipped.has('claim')) return 'claim';
   if (!d.roof_area_sqft && !s.skipped.has('area')) return 'area';
+  if (!d.building_stories && !s.skipped.has('stories')) return 'stories';
+  if (!d.leaks && !s.skipped.has('leaks')) return 'leaks';
   if (!pricesComplete(s) && !s.skipped.has('price')) return 'price';
   if (!s.extrasDone) return 'extras';
   return 'confirm';
@@ -427,6 +464,19 @@ function blanks(s) {
   return out;
 }
 
+function extraLines(s) {
+  const d = s.data; const out = [];
+  if (d.leaks) out.push(`${tx(s, 'lblLeaks')} ${tx(s, d.leaks === 'yes' ? 'leaksYes' : d.leaks === 'no' ? 'leaksNo' : 'leaksUnknown')}`);
+  const shingles = [...new Set(['good', 'better', 'best'].map((k) => d.tiers[k].shingle).filter(Boolean))];
+  if (!isRepair(s) && shingles.length) out.push(`${tx(s, 'lblShingle')} ${shingles.join(' / ')}`);
+  const yrs = (isRepair(s) ? [d.repair.labor_years] : ['good', 'better', 'best'].map((k) => d.tiers[k].labor_years)).filter((v) => v != null);
+  if (yrs.length) out.push(`${tx(s, 'lblWarranty')} ${tx(s, 'workmanship')} ${yrs.join(' / ')} ${tx(s, 'yrsWord')}`);
+  const pm = d.payment && d.payment.mode;
+  if (pm) out.push(`${tx(s, 'lblPay')} ${pm === 'on_completion' ? tx(s, 'payCompletion') : pm === 'deposit_balance' ? tx(s, 'payDepositBalance') : tx(s, 'payStages')}`);
+  if (d.timeline_days != null) out.push(`${tx(s, 'lblTime')} ${tx(s, 'upTo', d.timeline_days)}`);
+  return out;
+}
+
 function summary(s) {
   const d = s.data; const lines = [tx(s, 'confirmHead'), `${tx(s, 'lblCustomer')} ${d.customer_name_and_address}`];
   const job = [isRepair(s) ? tx(s, 'repair') : tx(s, 'replacement')];
@@ -442,6 +492,7 @@ function summary(s) {
     lines.push(`${tx(s, 'lblPrices')} ` + tx(s, 'tierWords').map((w, i) => (tierPrices(s)[i] != null ? `${w} ${money(tierPrices(s)[i])}` : null)).filter(Boolean).join(' · '));
   }
   if (d.discount && d.discount !== 'none') lines.push(`${tx(s, 'lblDiscount')} ${d.discount.pct}% ${d.discount.name || ''}`.trim());
+  extraLines(s).forEach((l) => lines.push(l));
   lines.push(`${tx(s, 'lblPhotos')} ${tx(s, 'photosWord', s.images.length)}`);
   const b = blanks(s);
   if (b.length) lines.push('', tx(s, 'blank', b.join(', ')));
@@ -463,6 +514,8 @@ async function advance(s, to) {
     case 'source': return sendButtons(to, tx(s, 'qSource'), [{ id: 'src:retail', title: btn(s, 'retail') }, { id: 'src:insurance', title: btn(s, 'insurance') }]);
     case 'claim': return sendButtons(to, tx(s, 'qClaim'), [skipBtn]);
     case 'area': return sendButtons(to, tx(s, 'qArea') + tip, [skipBtn]);
+    case 'stories': return sendButtons(to, tx(s, 'qStories'), [{ id: 'st:1', title: btn(s, 'story1') }, { id: 'st:2', title: btn(s, 'story2') }, skipBtn]);
+    case 'leaks': return sendButtons(to, tx(s, 'qLeaks'), [{ id: 'lk:yes', title: btn(s, 'yes') }, { id: 'lk:no', title: btn(s, 'no') }, { id: 'lk:unknown', title: btn(s, 'unsure') }]);
     case 'price':
       return sendButtons(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep'), [skipBtn]);
     case 'extras': {
@@ -538,7 +591,10 @@ function applyIntake(d, s) {
   d.meta.pitch = D.pitch || null;
   d.meta.leadSource = D.lead_source || 'retail';
   d.meta.claimNumber = D.lead_source === 'insurance' ? D.claim_number || '' : '';
-  d.discount = D.discount && D.discount !== 'none' ? { pct: D.discount.pct, name: String(D.discount.name || '').toLowerCase() } : null;
+  let logo = '';
+  try { if (P.logoFile && fs.existsSync(path.join(publicDir, P.logoFile))) logo = `data:image/jpeg;base64,${fs.readFileSync(path.join(publicDir, P.logoFile)).toString('base64')}`; } catch (e) { logo = ''; }
+  d.meta.brand = { phone: P.phone || '', whatsapp: P.phone || '', license: P.license || '', color: P.brandColor || '', logo };
+  d.discount = D.discount && D.discount !== 'none' ? { pct: D.discount.pct, name: String(D.discount.name || 'customer').toLowerCase() } : null;
   d.terms = {
     paymentMode: D.payment.mode || (isRepair(s) ? 'on_completion' : 'standard'),
     deposit: D.payment.deposit != null ? D.payment.deposit : 1000,
@@ -604,10 +660,15 @@ async function doBuild(s, to, host) {
   await sendText(to, tx(s, 'building'));
   try {
     const d = embedPhotos(applyIntake(await buildReportData(s), s), s);
+    const token = crypto.randomBytes(12).toString('hex');
+    d.meta.acceptToken = token;
+    d.meta.acceptUrl = `https://${host}/accept`;
+    QUOTES[token] = { phone: to, quoteNumber: s.quoteNumber, address: d.meta.addressLine1 || '', created: Date.now() };
+    saveQuotes();
     if (!(d.findings || []).length) throw new Error('No findings written');
     const b = blanks(s);
     if (b.length) d.flags.push(`DRAFT: still blank: ${b.join(', ')}.`);
-    s.report = JSON.parse(JSON.stringify(d, (k, v) => (k === 'photoSrc' || k === 'coverPhotoSrc' ? undefined : v)));
+    s.report = JSON.parse(JSON.stringify(d, (k, v) => (k === 'photoSrc' || k === 'coverPhotoSrc' || k === 'logo' ? undefined : v)));
     const fileName = `Roof_Quote_${crypto.randomBytes(8).toString('hex')}.html`;
     fs.writeFileSync(path.join(publicDir, fileName), renderQuoteHtml(d), 'utf8');
     const url = `https://${host}/files/${fileName}`;
@@ -624,6 +685,52 @@ async function doBuild(s, to, host) {
     console.error('❌ Report build error:', err);
     s.stage = 'confirm';
     await sendText(to, tx(s, 'hiccup'));
+  }
+}
+
+// Prices typed on their own ("20k / 25k / 30k", "20/25/30", "28000") are read by code, not guessed by the AI
+function parsePriceList(text, repair) {
+  const t = text.trim();
+  const tokens = t.match(/\$?\d[\d,]*(?:\.\d+)?\s*k?/gi);
+  if (!tokens) return null;
+  const rest = t.replace(/\$?\d[\d,]*(?:\.\d+)?\s*k?/gi, '').replace(/[\s\/,&;-]|and|y\b/gi, '');
+  if (rest) return null;
+  let nums = tokens.map((x) => toNum(x));
+  if (nums.some((n) => n == null)) return null;
+  if (!repair && nums.every((n) => n < 1000)) nums = nums.map((n) => n * 1000); // "20/25/30" means thousands
+  return nums;
+}
+
+// Buttons we are waiting on: understand a typed version, or gently point back to the buttons. Never guess.
+async function quickAnswer(s, to, low) {
+  const words = low.split(/\s+/).filter(Boolean).length;
+  const bare = /^[$\d][\d,.\s]*k?$/.test(low);
+  const nudge = async () => { await sendText(to, tx(s, 'nudge')); await advance(s, to); return true; };
+  const done = async () => { await advance(s, to); return true; };
+  switch (s.awaiting) {
+    case 'type':
+      if (/repl|reempl|tear/.test(low)) { s.data.job_type = 'replacement'; return done(); }
+      if (/repair|repar/.test(low)) { s.data.job_type = 'repair'; return done(); }
+      return words <= 3 ? nudge() : false;
+    case 'source':
+      if (/insur|seguro/.test(low)) { s.data.lead_source = 'insurance'; return done(); }
+      if (/retail|particular|private|cash|out of pocket/.test(low)) { s.data.lead_source = 'retail'; return done(); }
+      return words <= 3 ? nudge() : false;
+    case 'stories': {
+      const m = low.match(/^(\d+|one|two|three|un|uno|dos|tres)\b/);
+      const map = { one: 1, un: 1, uno: 1, two: 2, dos: 2, three: 3, tres: 3 };
+      if (m) { const n = Number(m[1]) || map[m[1]]; s.data.building_stories = n === 1 ? '1 story' : `${n} stories`; return done(); }
+      return words <= 3 ? nudge() : false;
+    }
+    case 'leaks':
+      if (/^(yes|yeah|yep|si|sí)\b/.test(low)) { s.data.leaks = 'yes'; return done(); }
+      if (/^(no|nope|none|nada)\b/.test(low)) { s.data.leaks = 'no'; return done(); }
+      if (/(not sure|unknown|no s[eé]|don'?t know|idk)/.test(low)) { s.data.leaks = 'unknown'; return done(); }
+      return words <= 3 ? nudge() : false;
+    case 'extras':
+      return bare ? nudge() : false;
+    default:
+      return false;
   }
 }
 
@@ -648,7 +755,7 @@ async function skipCurrent(s, to) {
   switch (s.awaiting) {
     case 'source': s.data.lead_source = 'retail'; break;
     case 'extras': s.extrasDone = true; break;
-    case 'claim': case 'area': case 'price': s.skipped.add(s.awaiting); break;
+    case 'claim': case 'area': case 'price': case 'stories': case 'leaks': s.skipped.add(s.awaiting); break;
     case 'addr': case 'type': return sendText(to, tx(s, 'needThis'));
     default: break;
   }
@@ -665,7 +772,11 @@ async function onButton(s, to, id, host, phone) {
   if (id === 'change') { s.stage = 'changing'; s.awaiting = 'change'; return sendText(to, tx(s, 'qChange')); }
   if (id === 'skip') return skipCurrent(s, to);
   if (id === 'extras:none') { s.extrasDone = true; return advance(s, to); }
+  const needs = { 'type:': 'type', 'src:': 'source', 'st:': 'stories', 'lk:': 'leaks' };
+  for (const [prefix, q] of Object.entries(needs)) if (id.startsWith(prefix) && s.awaiting !== q) return null; // an old button: ignore
   if (id === 'type:replacement' || id === 'type:repair') s.data.job_type = id.split(':')[1];
+  if (id === 'st:1' || id === 'st:2') s.data.building_stories = id === 'st:1' ? '1 story' : '2 stories';
+  if (id.startsWith('lk:')) s.data.leaks = id.split(':')[1];
   if (id === 'src:retail' || id === 'src:insurance') s.data.lead_source = id.split(':')[1];
   if (s.stage === 'done') return null;
   return advance(s, to);
@@ -682,7 +793,7 @@ async function onText(s, to, text, host, phone) {
     s.stage = 'collect';
     if (GREET_RE.test(low)) { await sendText(to, tx(s, 'hello', firstName(s.contractorName))); return; }
   }
-  if (s.stage === 'collect' && SKIP_RE.test(low)) return skipCurrent(s, to);
+  if (s.stage === 'collect' && SKIP_RE.test(low) && !(s.awaiting === 'leaks' && /^(no|nope|none|nada)$/.test(low))) return skipCurrent(s, to);
   if (s.stage === 'collect' && BUILD_RE.test(low)) return showConfirm(s, to);
   if (s.stage === 'confirm' && BUILD_RE.test(low)) return doBuild(s, to, host);
 
@@ -691,6 +802,15 @@ async function onText(s, to, text, host, phone) {
     const n = toNum(low.replace(/(sq\s?ft|sf|ft2|pies)/i, ''));
     if (n) { s.data.roof_area_sqft = n; return advance(s, to); }
   }
+
+  if (s.stage === 'collect' && s.awaiting === 'price') {
+    const nums = parsePriceList(text, isRepair(s));
+    if (nums && nums.length) {
+      if (isRepair(s)) { if (nums.length === 1) { s.data.repair.total_price = nums[0]; return advance(s, to); } }
+      else if (nums.length <= 3) { nums.forEach((n, i) => { s.data.tiers[['good', 'better', 'best'][i]].price = n; }); return advance(s, to); }
+    }
+  }
+  if (s.stage === 'collect' && (await quickAnswer(s, to, low))) return null;
 
   // A plain typed answer to a single simple question counts even if the AI reader misses it
   if (s.awaiting === 'claim' && text.trim().length <= 40 && !SKIP_RE.test(low)) { s.data.claim_number = text.trim(); return advance(s, to); }
@@ -722,6 +842,11 @@ async function onText(s, to, text, host, phone) {
 }
 
 async function onImage(s, to, message) {
+  if (s.stage === 'setup' && s.awaiting === 'setup_logo') {
+    const logo = await downloadWhatsAppImage(message.image.id);
+    if (logo) s.draft.logoFile = logo;
+    return setupNext(s, to);
+  }
   const file = await downloadWhatsAppImage(message.image.id);
   if (!file) return sendText(to, tx(s, 'hiccup'));
   s.images.push({ id: String(s.images.length + 1), file, caption: message.image.caption || '' });
@@ -745,7 +870,7 @@ async function photosSettled(s, to) {
 }
 
 // ----- One-time setup: company, usual shingles and warranties, how you get paid, look of the reports -----
-const SETUP_ORDER = ['setup_company', 'setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_pay', 'setup_theme'];
+const SETUP_ORDER = ['setup_company', 'setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_pay', 'setup_theme', 'setup_brand', 'setup_phone', 'setup_license', 'setup_color', 'setup_logo'];
 
 async function startSetup(s, to) {
   s.prevStage = s.stage === 'setup' ? s.prevStage : s.stage;
@@ -766,6 +891,11 @@ function askSetup(s, to) {
     case 'setup_years': return sendButtons(to, tx(s, 'sYears'), [skip]);
     case 'setup_mfr': return sendButtons(to, tx(s, 'sMfr'), [skip]);
     case 'setup_pay': return sendButtons(to, tx(s, 'sPay'), [{ id: 'pay:standard', title: btn(s, 'payStandard') }, { id: 'pay:poc', title: btn(s, 'payPoc') }, skip]);
+    case 'setup_brand': return sendButtons(to, tx(s, 'sBrand'), [{ id: 'brand:yes', title: btn(s, 'addBrand') }, { id: 'brand:no', title: btn(s, 'notNow') }]);
+    case 'setup_phone': return sendButtons(to, tx(s, 'sPhone'), [skip]);
+    case 'setup_license': return sendButtons(to, tx(s, 'sLicense'), [skip]);
+    case 'setup_color': return sendButtons(to, tx(s, 'sColor'), [{ id: 'color:#1a5fb4', title: btn(s, 'blue') }, { id: 'color:#2b7a4b', title: btn(s, 'green') }, skip]);
+    case 'setup_logo': return sendButtons(to, tx(s, 'sLogo'), [skip]);
     default: return sendButtons(to, tx(s, 'sTheme'), [{ id: 'theme:auto', title: btn(s, 'themeAuto') }, { id: 'theme:dark', title: btn(s, 'themeDark') }, { id: 'theme:blush', title: btn(s, 'themeBlush') }]);
   }
 }
@@ -790,6 +920,17 @@ async function setupText(s, to, text) {
     return setupNext(s, to);
   }
   if (s.awaiting === 'setup_pay') { s.draft.payment = { mode: /complet|poc|done|termin/i.test(t) ? 'on_completion' : 'standard' }; return setupNext(s, to); }
+  if (s.awaiting === 'setup_brand') return /^(y|yes|si|sí|ok|add)/i.test(t) ? setupNext(s, to) : finishSetup(s, to);
+  if (s.awaiting === 'setup_phone') { s.draft.phone = t.slice(0, 30); return setupNext(s, to); }
+  if (s.awaiting === 'setup_license') { s.draft.license = t.slice(0, 40); return setupNext(s, to); }
+  if (s.awaiting === 'setup_color') {
+    const named = { blue: '#1a5fb4', green: '#2b7a4b', red: '#c0392b', orange: '#ce4e1b', black: '#111517', purple: '#6f42c1', teal: '#0f766e', azul: '#1a5fb4', verde: '#2b7a4b', rojo: '#c0392b' };
+    const hex = t.match(/#?([0-9a-f]{6})\b/i);
+    if (hex) s.draft.brandColor = `#${hex[1]}`;
+    else if (named[t.toLowerCase()]) s.draft.brandColor = named[t.toLowerCase()];
+    return setupNext(s, to);
+  }
+  if (s.awaiting === 'setup_logo') { await sendText(to, tx(s, 'nudge')); return askSetup(s, to); }
   const th = themeOf(t);
   if (th) s.draft.theme = th;
   return setupNext(s, to);
@@ -797,8 +938,12 @@ async function setupText(s, to, text) {
 
 async function setupButton(s, to, id) {
   if (id === 'skip') return setupNext(s, to);
+  const needs = { 'pay:': 'setup_pay', 'theme:': 'setup_theme', 'brand:': 'setup_brand', 'color:': 'setup_color' };
+  for (const [prefix, step] of Object.entries(needs)) if (id.startsWith(prefix) && s.awaiting !== step) return null; // an old button: ignore
   if (id.startsWith('pay:')) s.draft.payment = { mode: id === 'pay:poc' ? 'on_completion' : 'standard' };
   if (id.startsWith('theme:')) s.draft.theme = id.split(':')[1];
+  if (id === 'brand:no') return finishSetup(s, to);
+  if (id.startsWith('color:')) s.draft.brandColor = id.slice(6);
   return setupNext(s, to);
 }
 
@@ -895,6 +1040,29 @@ app.post('/', async (req, res) => {
       await sendText(phone, tx(s, 'hiccup'));
     }
   }).catch((e) => console.error('❌ Queue error:', e));
+});
+
+// The report's "Accept" button posts here. The contractor is told on WhatsApp right away.
+const allowCors = (req, res, next) => {
+  res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  return next();
+};
+app.options('/accept', allowCors);
+app.post('/accept', allowCors, async (req, res) => {
+  const b = req.body || {};
+  const q = QUOTES[String(b.token || '')];
+  const name = String(b.name || '').trim().slice(0, 80);
+  if (!q) return res.status(404).json({ ok: false });
+  if (!b.agreed || name.length < 3) return res.status(400).json({ ok: false });
+  const again = Boolean(q.accepted);
+  if (!again) {
+    q.accepted = { name, option: String(b.option || '').slice(0, 40), price: toNum(b.price), when: new Date().toISOString() };
+    saveQuotes();
+    const price = q.accepted.price != null ? `: ${money(q.accepted.price)}` : '';
+    await sendText(q.phone, `✅ ${name} accepted Quote ${q.quoteNumber} for ${q.address}.\n${q.accepted.option}${price}\nSigned by typing their name on ${new Date().toLocaleString('en-GB')}.`);
+  }
+  return res.json({ ok: true, again });
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));

@@ -5,16 +5,16 @@
 <title>Roof Condition Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#111517;--deep:#181f22;--paper:#fbf9f6;--card:#f1eee8;--rule:#ded7cc;--slate:#727a7e;--mute:#9ba3a6;--sig:#ce4e1b;--sigbg:#faebe2;--grn:#2b6a4e;--grnbg:#e8f0eb;--amb:#b07d14;--text:#111517;
+:root{--ink:#111517;--deep:#181f22;--paper:#fbf9f6;--card:#f1eee8;--rule:#ded7cc;--slate:#727a7e;--mute:#687176;--sig:#ce4e1b;--sigbg:#faebe2;--grn:#2b6a4e;--grnbg:#e8f0eb;--amb:#b07d14;--text:#111517;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme]){--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}}
-:root[data-theme="dark"]{--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--mute:#9aa3a7;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}}
+:root[data-theme="dark"]{--paper:#14181a;--card:#1d2326;--rule:#2d3539;--slate:#98a1a5;--mute:#9aa3a7;--sigbg:#2b1a12;--grnbg:#16261f;--text:#ece8e1;--grn:#6fc29c}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--text);font:400 17px/1.6 Lora,Georgia,serif}
 h1,h2,h3,.p{font-family:Poppins,system-ui,sans-serif}
 .w{max-width:980px;margin:0 auto;padding:0 24px}
-.lab{font:500 12px/1 Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.lab{font:500 13px/1.2 Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .dark{background:var(--ink);color:#fff}
 .cover{padding:44px 0 0}
 .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:20px;padding-bottom:28px;border-bottom:1px solid var(--ink-line,#2a3135)}
@@ -38,7 +38,7 @@ h2{font:700 38px/1.15 Poppins,sans-serif;margin:0 0 28px}
 .call p{margin:0}
 .hero .ph{width:100%;max-height:560px;object-fit:cover;display:block}
 .hero .in{padding:32px 24px 56px}
-.chip{display:inline-block;font:600 12px/1 Poppins,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#fff;padding:6px 10px;border-radius:3px;background:var(--amb)}
+.chip{display:inline-block;font:600 13px/1 Poppins,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#fff;padding:6px 10px;border-radius:3px;background:var(--amb)}
 .chip.s{background:var(--sig)}.chip.v{background:var(--slate)}
 .hero h2{font-size:clamp(30px,5vw,46px);color:#fff;margin:14px 0 20px}
 .sol{border-left:4px solid var(--grn);background:var(--grnbg);padding:18px 22px;margin-top:22px}
@@ -58,7 +58,7 @@ h2{font:700 38px/1.15 Poppins,sans-serif;margin:0 0 28px}
 .ref{font:400 12px Poppins,sans-serif;color:var(--mute);margin-top:12px;display:block}
 @media(max-width:720px){.card{grid-template-columns:1fr}.card img{min-height:0;height:300px}}
 table{width:100%;border-collapse:collapse;font:400 15px/1.45 Poppins,sans-serif}
-th{background:var(--deep);color:#fff;text-align:left;font-weight:500;padding:10px 12px}
+th{background:transparent;color:var(--slate);text-align:left;font:600 12px Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:10px 12px;border-bottom:2px solid var(--text)}
 td{padding:12px;border-bottom:1px solid var(--rule);vertical-align:top}
 .tw{overflow-x:auto}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
@@ -103,7 +103,7 @@ tr.tot td{font-weight:600}
 .inc li{margin:6px 0;break-inside:avoid}
 @media(max-width:640px){.inc ul{columns:1}.psr{grid-template-columns:40px 1fr}.psr .chipwrap{grid-column:2}}
 
-:root[data-theme="blush"]{--ink:#26201f;--deep:#322a28;--paper:#fcf9f7;--card:#f5eeea;--rule:#e6dbd4;--slate:#7a6f6b;--mute:#a39793;--sig:#ad5650;--sigbg:#f8ece9;--grn:#4f7a68;--grnbg:#eaf0ec;--amb:#b58a45;--text:#2a2322;--ink-line:#3d3532;--ink-mute:#cbbfba;--ink-soft:#d8cdc8;--hsol:#322a28;--hsolacc:#e3b9ad;--noimg-ink:#312927;--kick:#e39a8f}
+:root[data-theme="blush"]{--ink:#26201f;--deep:#322a28;--paper:#fcf9f7;--card:#f5eeea;--rule:#e6dbd4;--slate:#7a6f6b;--mute:#80737a;--sig:#ad5650;--sigbg:#f8ece9;--grn:#4f7a68;--grnbg:#eaf0ec;--amb:#b58a45;--text:#2a2322;--ink-line:#3d3532;--ink-mute:#cbbfba;--ink-soft:#d8cdc8;--hsol:#322a28;--hsolacc:#e3b9ad;--noimg-ink:#312927;--kick:#e39a8f}
 .cover .kick{color:var(--kick,var(--sig))}.hero .prob{color:var(--kick,var(--sig))}
 .tsw{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;gap:2px;background:var(--card);border:1px solid var(--rule);border-radius:999px;padding:3px;box-shadow:0 4px 18px rgba(0,0,0,.18);font:500 12px Poppins,sans-serif}
 .tsw button{border:0;background:transparent;color:var(--slate);padding:7px 12px;border-radius:999px;font:inherit;cursor:pointer}
@@ -119,6 +119,62 @@ tr.tot td{font-weight:600}
 .cover h1{margin:16px 0 8px}
 .cover p.tag{margin:22px 0 0}
 @media(max-width:560px){.meta{grid-template-columns:1fr 1fr;gap:16px 12px;padding-bottom:20px}.cover .cw{padding-top:28px}.cover .ct{padding-top:40px}.cover .bgimg{min-height:340px}}
+
+:root{--brand:var(--sig)}
+.rh{font-size:13px;color:var(--slate)}.ref{font-size:13px;color:var(--slate)}
+body{padding-bottom:92px}
+.brandrow{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-bottom:24px}
+.brandrow .wm{font:700 17px Poppins,sans-serif;letter-spacing:.02em;color:#fff}
+.brandrow .logo{max-height:44px;max-width:190px;width:auto;object-fit:contain;display:block}
+.brandrow .lic{font:500 13px Poppins,sans-serif;color:var(--ink-mute,#b8bec1)}
+.sumsec{padding:44px 0 8px}
+.sumcard{background:var(--card);border-left:6px solid var(--brand);padding:30px 32px}
+.sumcard .sumh{font:700 clamp(26px,4.6vw,36px)/1.2 Poppins,sans-serif;margin:12px 0 14px}
+.sumcard p{margin:0;max-width:760px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:26px}
+.fact{background:var(--paper);padding:16px 18px;font-family:Poppins,sans-serif}
+.fact span{display:block;font:600 12px Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--slate)}
+.fact b{display:block;font:700 22px/1.2 Poppins,sans-serif;margin-top:6px}
+.fact small{display:block;font:400 13px Poppins,sans-serif;color:var(--slate);margin-top:4px}
+.fact.big{grid-column:span 2}.fact.big b{font-size:40px;color:var(--brand)}
+.meter{margin-top:26px}.meter .bar{margin:10px 0 0}
+.strip{display:flex;flex-wrap:wrap;gap:6px 22px;margin:18px 2px 0;font:400 15px Poppins,sans-serif;color:var(--slate)}
+.strip b{color:var(--text);font-weight:600}
+.faq details{border-bottom:1px solid var(--rule);padding:4px 0}
+.faq summary{cursor:pointer;list-style:none;font:600 16px/1.4 Poppins,sans-serif;padding:14px 32px 14px 0;position:relative}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';position:absolute;right:4px;top:10px;font:400 26px Poppins,sans-serif;color:var(--slate)}
+.faq details[open] summary::after{content:'–'}
+.faq p{margin:0 0 16px;max-width:760px}
+.accbtn{display:inline-block;margin:6px 0 4px;min-height:50px;padding:0 28px;border:0;border-radius:999px;background:var(--brand);color:#fff;font:700 16px Poppins,sans-serif;cursor:pointer}
+.abar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;gap:8px;align-items:center;justify-content:center;padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));background:var(--paper);border-top:1px solid var(--rule);box-shadow:0 -6px 24px rgba(0,0,0,.10);font-family:Poppins,sans-serif}
+.abar .ib{min-height:46px;padding:0 14px;border:1px solid var(--rule);background:var(--card);color:var(--text);border-radius:999px;font:600 14px Poppins,sans-serif;display:inline-flex;align-items:center;gap:6px;text-decoration:none;cursor:pointer;white-space:nowrap}
+.abar .acc{flex:1;max-width:340px;min-height:48px;border:0;border-radius:999px;background:var(--brand);color:#fff;font:700 16px Poppins,sans-serif;cursor:pointer}
+.sheet[hidden]{display:none}
+.sheet{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheetbox{background:var(--paper);color:var(--text);width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:26px 24px calc(26px + env(safe-area-inset-bottom,0px));position:relative;font-family:Poppins,sans-serif}
+@media(min-width:640px){.sheet{align-items:center}.sheetbox{border-radius:20px}}
+.sheetbox h3{margin:0 0 4px;font:700 24px Poppins,sans-serif}.sheetbox .sub{margin:0 0 18px;color:var(--slate);font-size:15px}
+.sheetbox .x{position:absolute;right:14px;top:10px;border:0;background:transparent;color:var(--slate);font-size:30px;cursor:pointer}
+.sheetbox fieldset{border:0;margin:0 0 14px;padding:0}.sheetbox legend{font:600 13px Poppins,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);margin-bottom:8px}
+.rd{display:flex;align-items:center;gap:12px;border:1px solid var(--rule);background:var(--card);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer}
+.rd span{flex:1;font-weight:600}.rd b{font-size:18px}
+.onep{display:flex;justify-content:space-between;align-items:baseline;border:1px solid var(--rule);background:var(--card);border-radius:12px;padding:14px;margin-bottom:14px}.onep b{font-size:26px;color:var(--brand)}
+.fld{display:block;font:600 13px Poppins,sans-serif;color:var(--slate);margin-bottom:14px}
+.fld input{display:block;width:100%;margin-top:6px;padding:13px 14px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--text);font:400 17px Poppins,sans-serif}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.4;margin-bottom:14px}.chk input{margin-top:4px;width:20px;height:20px}
+.err{color:#b3261e;font-size:14px;margin:0 0 10px}
+.go{width:100%;min-height:52px;border:0;border-radius:999px;background:var(--brand);color:#fff;font:700 17px Poppins,sans-serif;cursor:pointer}
+.go[disabled]{opacity:.65}
+.tick{width:54px;height:54px;border-radius:50%;background:var(--grn);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:12px}
+@media(max-width:720px){.card h3{padding-right:0}.num{font-size:44px;top:10px;right:14px}}
+@media print{.abar,.sheet{display:none!important}body{padding-bottom:0}}
+.more summary{cursor:pointer;list-style:none;display:inline-block;min-height:46px;line-height:46px;padding:0 20px;border:1px solid var(--text);border-radius:999px;font:600 15px Poppins,sans-serif;margin:6px 0 16px}.more summary::-webkit-details-marker{display:none}.more[open] summary{background:var(--text);color:var(--paper)}
+.dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--text);background:linear-gradient(90deg,var(--text) 50%,transparent 50%);display:inline-block}
+.abar .acc{white-space:nowrap;padding:0 18px}.abar .acc .sm{display:none}
+@media(max-width:480px){.abar .acc .lg{display:none}.abar .acc .sm{display:inline}.abar{gap:6px}.abar .ib{padding:0 12px}
+.sumsec{padding-top:28px}.sumcard{padding:22px 20px}.sumcard .sumh{font-size:22px}.fact b{font-size:19px}.fact.big b{font-size:34px}}
+.fact b{font-size:20px}
 </style></head>
 <body><div id="app"></div>
 <!-- DATA BLOCK: the WhatsApp app replaces the JSON in this tag, or sets window.REPORT_DATA before load, or calls renderReport(data) / postMessage(data). -->
@@ -207,6 +263,8 @@ const num=n=>(n==null||n==='')?null:Number(String(n).replace(/,/g,''));
 const has=v=>v!=null&&v!=='';
 const money=n=>(n==null||isNaN(n))?'$ —':'$'+n.toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});
 const ft=n=>num(n)==null?'—':num(n).toLocaleString('en-US')+' ft';
+const SEVL={DEFINING:'Main issue',PRIORITY:'Urgent',HIGH:'Important',MEDIUM:'Minor',VERIFY:'To confirm'};
+const sl=v=>SEVL[v]||cap(v);
 const sc=s=>/DEFINING|PRIORITY/.test(s)?'s':/VERIFY/.test(s)?'v':'';
 const cap=s=>String(s||'').charAt(0)+String(s||'').slice(1).toLowerCase();
 const pic=(src,id,alt,cls)=>src?`<img ${cls?`class="${cls}" `:''}src="${esc(src)}" alt="${esc(alt)}">`:`<div class="noimg ${cls||''}">Photo ${esc(id)}</div>`;
@@ -236,23 +294,37 @@ function render(d){
  const photos=new Set([...F.map(f=>f.photoId),d.readingSet&&d.readingSet.photoId].filter(Boolean).map(String)).size;
  const rh=t=>`<div class="rh"><span>${A1} · ${t}</span><span>${co}</span></div>`;
  const roofBit=M.pitch?`${esc(M.pitch)} pitch`:esc(M.roofDescriptor||'');
- const st=(b,s,sm)=>`<div><b>${b}</b><span>${s}</span><small>${sm}</small></div>`;
- const stats=MS?st(photos,'roof photographs','every problem shown')+st(AN,'sq ft of roof',esc(M.measureSource||''))+st(esc(M.pitch||'—'),'predominant pitch',`${esc(M.facets||'—')} roof facets`)
-   :st(photos,'roof photographs','every problem shown')+st(F.length,'findings','each with its fix')+st(AN,'sq ft of roof',esc(M.roofNote||''));
+ const BR=M.brand||{};
  const cond=({serviceable:0,monitor:1,end_of_life:2})[V.condition]??2;
  const bar=['Serviceable','Monitor','End of life'].map((x,i)=>`<div class="${i==cond?'on':''}"><i></i>${x}</div>`).join('');
  const h=F[0]||{};
+ const srcOf=id=>{const k=String(id==null?'':id);const f=F.find(x=>String(x.photoId)==k&&x.photoSrc);return f?f.photoSrc:((d.readingSet&&String(d.readingSet.photoId)==k&&d.readingSet.photoSrc)||'')};
+ const coverSrc=M.coverPhotoSrc||srcOf(M.coverPhotoId)||h.photoSrc||'';
+ const heroOn=F.length&&!(coverSrc&&coverSrc===h.photoSrc);
  const usedG=new Set([String(h.photoId)]);
  let gl=(d.glance&&d.glance.length?d.glance.map(n=>F[n-1]):F.slice(1)).filter(f=>f&&f!==h);
  gl=gl.filter(f=>{const k=String(f.photoId);if(usedG.has(k))return false;usedG.add(k);return true}).slice(0,3);
- const glance=gl.length?`<div class="lab" style="margin-top:8px">What the photographs show</div><div class="gl">${gl.map(f=>`<figure>${pic(f.photoSrc,f.photoId,f.title)}<figcaption>${esc(f.caption||f.title)}</figcaption></figure>`).join('')}</div>`:'';
+ const glance=(gl.length>=2&&photos>=4)?`<div class="lab" style="margin-top:8px">What the photographs show</div><div class="gl">${gl.map(f=>`<figure>${pic(f.photoSrc,f.photoId,f.title)}<figcaption>${esc(f.caption||f.title)}</figcaption></figure>`).join('')}</div>`:'';
+ const okP=PR.filter(p=>p.p!=null).map(p=>p.p),minP=okP.length?Math.min(...okP):null;
+ const yrs=(REPAIR?[d.repair&&d.repair.laborYears]:O.map(o=>o.laborYears)).filter(has).map(Number);
+ const facts=[
+  okP.length?((NO>1&&!REPAIR)?['From',money(minP),`${NO} options below${D?' · discount applied':''}`]:[D?'Your price':'Price',money(PR[0].p),D?`${esc(D.pct)}% ${esc(D.name)} discount applied`:'']):['Price','$ —','To be confirmed'],
+  POC?['Payment','On completion','No deposit']:DB?['Payment','Deposit + balance',(T.depositPct!=null?T.depositPct+'% to start':money(T.deposit)+' to start')]:['Payment','Deposit + stages',money(T.deposit)+' to start'],
+  yrs.length?['Warranty',(Math.min(...yrs)==Math.max(...yrs)?Math.min(...yrs):Math.min(...yrs)+'–'+Math.max(...yrs))+' years',REPAIR?'on labor':(NO>1?'labor, by option':'labor and material')]:null,
+  T.timelineDays?['Timeline','Up to '+T.timelineDays+' days','']:null].filter(Boolean)
+  .map((f,i)=>`<div class="fact ${i==0?'big':''}"><span>${f[0]}</span><b>${f[1]}</b>${f[2]?`<small>${f[2]}</small>`:''}</div>`).join('');
+ const meter=REPAIR?'':`<div class="meter"><div class="lab">Condition of the shingle field</div><div class="bar">${bar}</div></div>`;
+ const sumcard=`<div class="sumcard"><div class="lab">The short version</div><h2 class="sumh">${esc(V.headline)}</h2><p>${esc(V.paragraph)}</p><div class="facts">${facts}</div>${meter}</div>`;
+ const pl=(n,w)=>`<span><b>${n}</b> ${w}${n==1?'':'s'}</span>`;
+ const stripBar=`<div class="strip">${pl(photos,'photo')}${pl(F.length,'finding')}${hasArea?`<span><b>${AN}</b> sq ft</span>`:''}${M.roofNote?`<span>${esc(M.roofNote)}</span>`:''}</div>`;
+ const brandrow=`<div class="brandrow">${BR.logo?`<img class="logo" src="${esc(BR.logo)}" alt="${co}">`:`<span class="wm">${co}</span>`}${BR.license?`<span class="lic">Lic. ${esc(BR.license)}</span>`:''}</div>`;
  const hp=Array.isArray(h.problem)?`<ul style="color:#d5d8da;padding-left:20px">${h.problem.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p style="color:#d5d8da;max-width:760px">${esc(h.problem)}</p>`;
  const sol=a=>`<div class="sol"><div class="lab" style="margin:0">The solution</div><ol>${list(a).map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
- const hero=F.length?`<section class="dark hero" style="padding:0">${pic(h.photoSrc,h.photoId,h.title,'ph')}<div class="w in"><span class="lab">Finding 1 · Photo ${esc(h.photoId)}</span> <span class="chip ${sc(h.severity)}" style="margin-left:10px">${esc(cap(h.severity))}</span><h2>${esc(h.title)}</h2><div class="lab prob">The problem</div>${hp}${sol(h.solution)}</div></section>`:'';
- const cards=F.slice(1).map((f,i)=>{const n=i+2;return`<article class="card">${pic(f.photoSrc,f.photoId,f.title)}<div class="b ${sc(f.severity)}"><span class="num">${String(n).padStart(2,'0')}</span><span class="chip ${sc(f.severity)}">${esc(f.severity)}</span><span class="ref">Finding ${n} · Photo ${esc(f.photoId)}</span><h3>${esc(f.title)}</h3><span class="lab">The problem</span><ul>${list(f.problem).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${sol(f.solution)}</div></article>`}).join('');
- const RS=(d.readingSet&&F.length>=3&&(d.readingSet.groups||[]).length)?d.readingSet:null,rs=RS?`<section><div class="w rs">${rh('Reading the set as a whole')}<h2>Reading the set as a whole</h2>${(RS.groups||[]).map(g=>`<p><b class="p">${esc(g.name)}</b> ${esc(g.text)} ${esc(g.refs)}.</p>`).join('')}${RS.photoId&&!F.some(f=>String(f.photoId)==String(RS.photoId))?`<figure style="margin:28px 0 0">${pic(RS.photoSrc,RS.photoId,RS.caption,'wide')}<figcaption class="ref">${esc(RS.photoLabel||'Overview')} · Photo ${esc(RS.photoId)}</figcaption><p style="color:var(--slate);margin:6px 0 0">${esc(RS.caption)}</p></figure>`:''}</div></section>`:'';
+ const hero=heroOn?`<section class="dark hero" style="padding:0">${pic(h.photoSrc,h.photoId,h.title,'ph')}<div class="w in"><span class="lab">Finding 1</span> <span class="chip ${sc(h.severity)}" style="margin-left:10px">${esc(sl(h.severity))}</span><h2>${esc(h.title)}</h2><div class="lab prob">The problem</div>${hp}${sol(h.solution)}</div></section>`:'';
+ const cards=(heroOn?F.slice(1):F).map((f,i)=>{const n=i+(heroOn?2:1);return`<article class="card">${pic(f.photoSrc,f.photoId,f.title)}<div class="b ${sc(f.severity)}"><span class="num">${String(n).padStart(2,'0')}</span><span class="chip ${sc(f.severity)}">${esc(sl(f.severity))}</span><span class="ref">Finding ${n}</span><h3>${esc(f.title)}</h3><span class="lab">The problem</span><ul>${list(f.problem).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${sol(f.solution)}</div></article>`}).join('');
+ const RS=(d.readingSet&&F.length>=4&&(d.readingSet.groups||[]).length)?d.readingSet:null,rs=RS?`<section><div class="w rs">${rh('Reading the set as a whole')}<h2>Reading the set as a whole</h2>${(RS.groups||[]).map(g=>`<p><b class="p">${esc(g.name)}</b> ${esc(g.text)} ${esc(g.refs)}.</p>`).join('')}${RS.photoId&&!F.some(f=>String(f.photoId)==String(RS.photoId))?`<figure style="margin:28px 0 0">${pic(RS.photoSrc,RS.photoId,RS.caption,'wide')}<figcaption class="ref">${esc(RS.photoLabel||'Overview')}</figcaption><p style="color:var(--slate);margin:6px 0 0">${esc(RS.caption)}</p></figure>`:''}</div></section>`:'';
  const rows=(d.problemsTable&&d.problemsTable.length?d.problemsTable:F.map(f=>({problem:f.title,solution:list(f.solution)[0],refs:String(F.indexOf(f)+1),severity:f.severity}))).concat([REPAIR?{problem:'Hidden damage under the repaired areas',solution:'Checked as each repair is opened; anything found is shown to you and priced first.',refs:'When opened',severity:'VERIFY'}:{problem:'How far the deck damage runs',solution:`Inspected at tear-off; damaged wood shown and replaced.`,refs:'At tear-off',severity:'VERIFY'}]);
- const ps=rows.map((r,i)=>`<div class="psr"><div class="n">${String(i+1).padStart(2,'0')}</div><div><b>${esc(r.problem)}</b><p>${esc(r.solution)}</p><small>${/^\d/.test(r.refs)?'Findings '+esc(r.refs):esc(r.refs)}</small></div><div class="chipwrap"><span class="chip ${sc(r.severity)}">${esc(r.severity)}</span></div></div>`).join('');
+ const ps=rows.map((r,i)=>`<div class="psr"><div class="n">${String(i+1).padStart(2,'0')}</div><div><b>${esc(r.problem)}</b><p>${esc(r.solution)}</p><small>${/^\d/.test(r.refs)?'Findings '+esc(r.refs):esc(r.refs)}</small></div><div class="chipwrap"><span class="chip ${sc(r.severity)}">${esc(sl(r.severity))}</span></div></div>`).join('');
  const ms=MS?`<section><div class="w"><h2>Your roof, measured</h2><p>Measured by ${esc(M.measureSource)} from aerial imagery, ${esc(M.measureDate)}. Every quantity in the pricing comes from these figures.</p><div class="kv">${[['Roof area',A],['Roof facets',M.facets],['Predominant pitch',M.pitch],['Ridges',ft(MS.ridges)],['Hips',ft(MS.hips)],['Valleys',ft(MS.valleys)],['Rakes',ft(MS.rakes)],['Eaves',ft(MS.eaves)],['Bends',ft(MS.bends)],['Drip edge',ft(MS.drip)],['Step flashing',ft(MS.step)],['Other flashing',ft(MS.flash)]].map(([k,v])=>`<div><b>${esc(v==null?'—':v)}</b>${k}</div>`).join('')}</div></div></section>`:'';
  const caps=MS?(num(MS.hips)||0)+(num(MS.ridges)||0):null;
  const inc=[ 'Tear-off of all existing layers to the deck',`New shingles, ${hasArea?A:'full roof'}`,`Damaged deck wood replaced as needed, up to ${T.woodPct}%`,'Synthetic underlayment',MS?`New drip edge, ${ft(MS.drip)}`:'New drip edge at every eave and rake',MS?`New valley lining, ${ft(MS.valleys)}`:'New valley lining',MS?`New step flashing, ${ft(MS.step)}`:'New flashing at walls and vents',MS?`New hip and ridge caps, ${ft(caps)}`:'New hip and ridge caps throughout','New flashed boots at every pipe','Manufacturer warranty on materials','Job complete in up to '+T.timelineDays+' days','Clean-up and magnetic nail sweep'];
@@ -283,44 +355,82 @@ function render(d){
  const mw=NO?joinOr(O.map((o,i)=>`${strip(o.mfrWarranty)}${NO>1?` (${esc(labels[i])})`:''}`)):'—';
  const RP=d.repair||{},RI=RP.items||[];
  const optsSec=`<section style="background:var(--card)"><div class="w">${rh('Your options')}<h2>${NO==1?'Your price':NO==2?'Your two options':'Your three options'}</h2><p>${NO==1?'Here is the full scope of work, and the price.':'Every option has the same scope of work. They differ only in the shingle and the length of our labor and material warranty.'}</p><div class="opts">${opts}</div><div class="inc"><div class="lab">Every option includes</div><ul>${inc.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div></section>`;
- const itemSec=`<section><div class="w">${rh('Your options')}<h2>Every line, itemised</h2><p>Each line is tied to the finding that calls for it. ${MS?'Quantities come from the '+esc(M.measureSource)+' report.':(hasArea?'Priced on '+A+' of roof area.':'Priced on the full roof area, confirmed on site.')}</p><div class="tw">${itab}</div><p style="font-size:14px;color:var(--slate)"><i>${NO>1?`All ${NO==2?'two':'three'} options carry the same scope of work; they differ in the shingle and the warranty. `:''}Damaged wood beyond ${T.woodPct}% of the deck is shown to you and priced in writing before it is replaced.</i></p></div></section>`;
+ const itemSec=`<section><div class="w">${rh('Your options')}<h2>Every line, itemised</h2><p>Each line is tied to the finding that calls for it. ${MS?'Quantities come from the '+esc(M.measureSource)+' report.':(hasArea?'Priced on '+A+' of roof area.':'Priced on the full roof area, confirmed on site.')}</p><details class="more"><summary>Show every line (${it.length} items)</summary><div class="tw">${itab}</div></details><p style="font-size:14px;color:var(--slate)"><i>${NO>1?`All ${NO==2?'two':'three'} options carry the same scope of work; they differ in the shingle and the warranty. `:''}Damaged wood beyond ${T.woodPct}% of the deck is shown to you and priced in writing before it is replaced.</i></p></div></section>`;
  const rq=`<section style="background:var(--card)"><div class="w">${rh('Your repair quote')}<h2>Your repair quote</h2><p>Each line is tied to the finding that calls for it. Work not listed here is not included.</p><div class="tw"><table><tr><th>#</th><th>Repair</th><th>Findings</th><th>Price</th></tr>${RI.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.name)}${x.detail?`<br><small style="color:var(--slate)">${esc(x.detail)}</small>`:''}</td><td>${esc(x.refs||'—')}</td><td>${num(x.price)==null?'Included':money(num(x.price))}</td></tr>`).join('')}${D?`<tr class="tot"><td></td><td>List price</td><td></td><td>${money(PR[0].L)}</td></tr><tr><td></td><td>${esc(cap(D.name))} discount (${esc(D.pct)}%)</td><td></td><td>${PR[0].disc==null?'$ —':'−'+money(PR[0].disc)}</td></tr>`:''}<tr class="tot"><td></td><td>${D?'Your price':'Total'}</td><td></td><td>${money(PR[0].p)}</td></tr></table></div><p style="font-size:14px;color:var(--slate)"><i>Repairs fix the areas listed. They do not renew the rest of the roof. If more damage is found while working, it is shown to you and priced in writing before it is repaired.</i></p>${num(RP.laborYears)!=null?`<p><b class="p">Warranty.</b> ${co} warrants the labor on these repairs for ${esc(RP.laborYears)} years.</p>`:''}</div></section>`;
  const tl=T.timelineDays?`<b class="p">Timeline.</b> The job is complete in up to ${T.timelineDays} days${REPAIR?'':' from the start of demolition'}, weather permitting.<br>`:'';
  const wr=REPAIR?(num(RP.laborYears)!=null?`<b class="p">Warranty.</b> ${co} warrants the labor on the repairs listed for ${esc(RP.laborYears)} years.<br>`:''):`<b class="p">Warranties.</b> ${(NO&&O.every(o=>has(o.mfrWarranty)))?`Manufacturer warranty on materials: ${mw}. `:''}${(O.length&&O.every(o=>has(o.laborYears)))?`${co} labor and material warranty: ${O.map((o,i)=>`${esc(o.laborYears)} years${NO>1?` (${esc(labels[i])})`:''}`).join(', ')}.`:'Warranty details are confirmed in writing before work starts.'}<br>`;
- const srcOf=id=>{const k=String(id==null?'':id);const f=F.find(x=>String(x.photoId)==k&&x.photoSrc);return f?f.photoSrc:((d.readingSet&&String(d.readingSet.photoId)==k&&d.readingSet.photoSrc)||'')};
- const coverSrc=M.coverPhotoSrc||srcOf(M.coverPhotoId)||h.photoSrc||'';
  document.title=`Roof Condition Report · ${M.addressLine1||''}`;
- $('app').innerHTML=`<header class="dark cover ${coverSrc?'':'nophoto'}"><div class="w cw"><div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep)+', ':''}${co}</b></div>${M.claimNumber?`<div class="lab">Claim number<b>${esc(M.claimNumber)}</b></div>`:''}</div><div class="ct"><div class="lab kick">Roof condition report · ${esc(M.product||(REPAIR?'Roof repair':'Shingle roof replacement'))}${M.leadSource==='insurance'?' · Insurance claim':''}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div></div>${coverSrc?`<img class="bgimg" src="${esc(coverSrc)}" alt="">`:''}</header>
- <section><div class="w">${rh('At a glance')}<h2>At a glance</h2><div class="stats">${stats}</div><div class="lab">Condition of the shingle field</div><div class="bar">${bar}</div><div class="call"><div class="lab" style="color:var(--sig)">The one thing to know</div><h3>${esc(V.headline)}</h3><p>${esc(V.paragraph)}</p></div>${glance}</div></section>
+ $('app').innerHTML=`<header class="dark cover ${coverSrc?'':'nophoto'}"><div class="w cw">${brandrow}<div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep)+', ':''}${co}</b></div>${M.claimNumber?`<div class="lab">Claim number<b>${esc(M.claimNumber)}</b></div>`:''}</div><div class="ct"><div class="lab kick">Roof condition report · ${esc(M.product||(REPAIR?'Roof repair':'Shingle roof replacement'))}${M.leadSource==='insurance'?' · Insurance claim':''}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div></div>${coverSrc?`<img class="bgimg" src="${esc(coverSrc)}" alt="">`:''}</header>
+ <section class="sumsec"><div class="w">${sumcard}${stripBar}${glance}</div></section>
  ${hero}<section><div class="w">${rh('Findings')}${cards}</div></section>${rs}
- <section style="padding-top:0"><div class="w">${rh('Problems and solutions')}<h2>Problems and solutions</h2><p>Every problem found, what fixes it, in order of priority.</p><div>${ps}</div></div></section>${ms}
+ ${F.length>3?`<section style="padding-top:0"><div class="w">${rh('Problems and solutions')}<h2>Problems and solutions</h2><p>Every problem found, what fixes it, in order of priority.</p><div>${ps}</div></div></section>`:''}${ms}
  ${REPAIR?rq:optsSec}
  ${REPAIR?'':itemSec}
- <section style="background:var(--card)"><div class="w">${rh('Compare us against anyone')}<h2>Compare us against anyone</h2><p>Ask every contractor who quotes this ${REPAIR?'work':'roof'} the same ${REPAIR?'':'twelve '}questions. Here are our answers.</p><div class="tw"><table><tr><th>Ask every contractor</th><th>Our answer</th></tr>${QS.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('')}</table></div></div></section>
- <section><div class="w">${rh('Terms')}<h2>Terms, and no pressure</h2>${POC?`<p>No deposit is required. The full price is due on completion, after the final inspection.</p>`:DB?`<p>${T.depositPct!=null?T.depositPct+'%':money(T.deposit)} deposit at signing, credited to the job. The balance is due on completion, after the final inspection.</p>`:`<p>A ${money(T.deposit)} deposit at signing, credited to the job. California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less. The remaining balance is paid in four stages, each tied to work you can see.</p>`}<div class="tw">${POC?sttP:DB?sttD:stt}</div><p>${D?`<b class="p">Discount.</b> A ${esc(D.pct)}% ${esc(D.name)} discount is applied to ${NO>1?'every option':'your price'}. The ${NO>1?'prices above already include':'price above already includes'} it.<br>`:''}${tl}${wr}<b class="p">Changes.</b> Nothing outside this scope is done without a written change order you have signed, with the price stated first.<br><b class="p">Validity.</b> These prices hold for ${T.validityDays} days from ${esc(M.date)}.</p><div class="np"><div class="lab" style="color:var(--grn)">No pressure</div><p style="margin:8px 0 0">You do not need to decide today. This report is yours to keep. Take it, show it to anyone, and put the ${REPAIR?'':'twelve '}questions on the previous page to every contractor you talk to.${REPAIR?'':' The roof needs replacing; it does not need replacing by us unless we are the right choice.'}</p></div>
- <h2 style="margin-top:56px;font-size:30px">Acceptance</h2><div class="lab" style="margin-bottom:6px">Prepared by</div><p class="p" style="font-size:15px">${M.rep?`<b>${esc(M.rep)}</b><br>Sales Representative, ${co}`:`<b>${co}</b>`}${M.companyAddress?`<br>${esc(M.companyAddress)}`:''}</p><div class="sig"><div>${NO>1?`Option chosen (${labels.join(' / ')})`:'Accepted'}</div><div>Homeowner signature</div><div>Date</div><div>Homeowner name (print)</div><div>For ${co}</div><div>Date</div></div></div></section>
- <footer><div class="w">Roof Condition Report · ${A1}, ${A2} · ${co}</div></footer>`;
+ <section style="background:var(--card)"><div class="w">${rh('Compare us against anyone')}<h2>Compare us against anyone</h2><p>Ask every contractor who quotes this ${REPAIR?'work':'roof'} the same ${REPAIR?'':'twelve '}questions. Here are our answers.</p><div class="faq">${QS.map((x,i)=>`<details${i<2?' open':''}><summary>${x[0]}</summary><p>${x[1]}</p></details>`).join('')}</div></div></section>
+ <section><div class="w">${rh('Terms')}<h2>Terms, and no pressure</h2>${POC?`<p>No deposit is required. The full price is due on completion, after the final inspection.</p>`:DB?`<p>${T.depositPct!=null?T.depositPct+'%':money(T.deposit)} deposit at signing, credited to the job. The balance is due on completion, after the final inspection.</p>`:`<p>A ${money(T.deposit)} deposit at signing, credited to the job. California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less. The remaining balance is paid in four stages, each tied to work you can see.</p>`}${POC?'':`<div class="tw">${DB?sttD:stt}</div>`}<p>${D?`<b class="p">Discount.</b> A ${esc(D.pct)}% ${esc(D.name)} discount is applied to ${NO>1?'every option':'your price'}. The ${NO>1?'prices above already include':'price above already includes'} it.<br>`:''}${tl}${wr}<b class="p">Changes.</b> Nothing outside this scope is done without a written change order you have signed, with the price stated first.<br><b class="p">Validity.</b> These prices hold for ${T.validityDays} days from ${esc(M.date)}.</p><div class="np"><div class="lab" style="color:var(--grn)">No pressure</div><p style="margin:8px 0 0">You do not need to decide today. This report is yours to keep. Take it, show it to anyone, and put the ${REPAIR?'':'twelve '}questions on the previous page to every contractor you talk to.${REPAIR?'':' The roof needs replacing; it does not need replacing by us unless we are the right choice.'}</p></div>
+ <h2 style="margin-top:56px;font-size:30px">Acceptance</h2><p>Ready to go ahead? Tap Accept below, or sign here.</p><button type="button" class="accbtn" data-accept>Accept this quote</button><div class="lab" style="margin-top:22px" style="margin-bottom:6px">Prepared by</div><p class="p" style="font-size:15px">${M.rep?`<b>${esc(M.rep)}</b><br>Sales Representative, ${co}`:`<b>${co}</b>`}${M.companyAddress?`<br>${esc(M.companyAddress)}`:''}</p><div class="sig"><div>${NO>1?`Option chosen (${labels.join(' / ')})`:'Accepted'}</div><div>Homeowner signature</div><div>Date</div><div>Homeowner name (print)</div><div>For ${co}</div><div>Date</div></div></div></section>
+ <footer><div class="w"><b>${co}</b>${BR.license?` · Lic. ${esc(BR.license)}`:''}${BR.phone?` · ${esc(BR.phone)}`:''}${BR.website?` · ${esc(BR.website)}`:''}<br>Roof Condition Report · ${A1}, ${A2}</div></footer>`;
 }
 const $=id=>document.getElementById(id);
 function load(){try{return window.REPORT_DATA||JSON.parse($('report-data').textContent)}catch(e){return null}}
 const THEMES=[['day','Day'],['dark','Dark'],['blush','Blush']];
 const ALIAS={woman:'blush',rose:'blush',light:'day'};
+function curTheme(){return document.documentElement.getAttribute('data-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches?'dark':'day')}
 function applyTheme(d){
  let t=null;try{t=localStorage.getItem('reportTheme')}catch(e){}
  t=ALIAS[t]||t;if(!THEMES.some(x=>x[0]==t)){t=d.meta&&d.meta.theme;t=ALIAS[t]||t}
- const ok=THEMES.some(x=>x[0]==t),root=document.documentElement;
- if(ok)root.setAttribute('data-theme',t);else root.removeAttribute('data-theme');
- let bar=document.getElementById('tsw');
- if(d.meta&&d.meta.themeSwitcher===false){if(bar)bar.remove();return}
- if(!bar){bar=document.createElement('div');bar.id='tsw';bar.className='tsw';bar.setAttribute('role','group');bar.setAttribute('aria-label','Report theme');
-  bar.innerHTML=THEMES.map(x=>`<button type="button" data-t="${x[0]}">${x[1]}</button>`).join('');
-  bar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.t;document.documentElement.setAttribute('data-theme',v);try{localStorage.setItem('reportTheme',v)}catch(er){}mark()});
-  document.body.appendChild(bar)}
- mark()}
-function mark(){const cur=document.documentElement.getAttribute('data-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches?'dark':'day');
- document.querySelectorAll('#tsw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t==cur)))}
-window.renderReport=d=>{const m=validate(d);if(m.length)console.warn('Report missing inputs:',m);render(d);applyTheme(d);return m};
+ const root=document.documentElement;
+ if(THEMES.some(x=>x[0]==t))root.setAttribute('data-theme',t);else root.removeAttribute('data-theme')}
+function mountBar(d){
+ const M=d.meta||{},BR=M.brand||{},REP=M.jobType==='repair',co=esc(M.company||'');
+ ['abar','acc'].forEach(id=>{const o=document.getElementById(id);if(o)o.remove()});
+ if(BR.color&&/^#[0-9a-f]{6}$/i.test(BR.color))document.documentElement.style.setProperty('--brand',BR.color);
+ const PRs=prices(d),O=d.options||[];
+ const opts=REP?[{label:'Repair quote',p:PRs[0]&&PRs[0].p}]:O.map((o,i)=>({label:O.length>1?(o.name||['Good','Better','Best'][i]):'Your price',p:PRs[i]&&PRs[i].p}));
+ const tok=M.acceptToken||'',key='accepted:'+(tok||M.addressLine1||'');
+ let prev=null;try{prev=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}
+ const ph=BR.phone||'',wa=String(BR.whatsapp||BR.phone||'').replace(/\D/g,'').replace(/^(\d{10})$/,'1$1');
+ const bar=document.createElement('div');bar.id='abar';bar.className='abar';
+ bar.innerHTML=(M.themeSwitcher===false?'':`<button type="button" class="ib" id="thm" aria-label="Change look"><i class="dot"></i><span id="thmn"></span></button>`)+
+  (ph?`<a class="ib" href="tel:${esc(ph.replace(/[^\d+]/g,''))}">Call</a>`:'')+(wa?`<a class="ib" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`:'')+
+  `<button type="button" class="acc" id="accopen">${prev?'Accepted ✓':'<span class="lg">Accept this quote</span><span class="sm">Accept</span>'}</button>`;
+ document.body.appendChild(bar);
+ const pr=o=>o.p!=null?money(o.p):'$ —';
+ const sh=document.createElement('div');sh.id='acc';sh.className='sheet';sh.hidden=true;sh.setAttribute('role','dialog');sh.setAttribute('aria-modal','true');
+ sh.innerHTML=`<div class="sheetbox"><button class="x" type="button" data-close aria-label="Close">×</button>
+  <div id="accform"><h3>Accept this quote</h3><p class="sub">${esc(M.addressLine1||'')} · ${co}</p>
+  ${opts.length>1?`<fieldset><legend>Choose your option</legend>${opts.map((o,i)=>`<label class="rd"><input type="radio" name="o" value="${i}"${i==(opts.length==3?1:0)?' checked':''}><span>${esc(o.label)}</span><b>${pr(o)}</b></label>`).join('')}</fieldset>`:`<div class="onep"><span>${esc(opts[0].label)}</span><b>${pr(opts[0])}</b></div>`}
+  <label class="fld">Type your full name as your signature<input id="accname" type="text" autocomplete="name" placeholder="Full name"></label>
+  <label class="chk"><input id="accok" type="checkbox"><span>I agree to the scope of work, price and terms in this report.</span></label>
+  <p class="err" id="accerr" hidden></p><button type="button" class="go" id="accgo">Accept and send</button></div>
+  <div id="accdone" hidden><div class="tick">✓</div><h3>Accepted</h3><p class="sub" id="accmsg"></p></div></div>`;
+ document.body.appendChild(sh);
+ const $q=x=>sh.querySelector(x),show=(done,msg)=>{$q('#accform').hidden=done;$q('#accdone').hidden=!done;if(msg)$q('#accmsg').textContent=msg};
+ const open=()=>{sh.hidden=false;if(prev)show(true,`You accepted the ${prev.option} on ${new Date(prev.when).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}. ${M.company||'The contractor'} has your signature.`);else show(false)};
+ const err=t=>{const e=$q('#accerr');e.textContent=t;e.hidden=!t};
+ document.getElementById('accopen').onclick=open;
+ document.querySelectorAll('[data-accept]').forEach(b=>b.onclick=open);
+ sh.addEventListener('click',e=>{if(e.target===sh||e.target.closest('[data-close]'))sh.hidden=true});
+ const tb=document.getElementById('thm'),tn=document.getElementById('thmn');
+ const lab=()=>{if(tn)tn.textContent=(THEMES.find(x=>x[0]==curTheme())||THEMES[0])[1]};lab();
+ if(tb)tb.onclick=()=>{const i=THEMES.findIndex(x=>x[0]==curTheme()),n=THEMES[(i+1)%THEMES.length][0];document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('reportTheme',n)}catch(e){}lab()};
+ $q('#accgo').onclick=async()=>{
+  const name=$q('#accname').value.trim();if(name.length<3){err('Please type your full name.');return}
+  if(!$q('#accok').checked){err('Please tick the box to agree.');return}
+  err('');const sel=sh.querySelector('input[name=o]:checked'),o=opts[sel?Number(sel.value):0];
+  const payload={token:tok,option:o.label,price:o.p,name,agreed:true,when:new Date().toISOString(),address:M.addressLine1||''};
+  const go=$q('#accgo');go.disabled=true;go.textContent='Sending…';
+  let ok=false,demo=false;
+  if(M.acceptUrl){try{const r=await fetch(M.acceptUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});ok=r.ok}catch(e){ok=false}}else{ok=true;demo=true}
+  if(!ok&&wa){window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I accept the quote for ${M.addressLine1||'the roof'}: ${o.label} ${o.p!=null?money(o.p):''}. Signed: ${name}`)}`,'_blank');ok=true}
+  if(!ok){err('We could not send this. Please call or message '+(M.company||'the contractor')+'.');go.disabled=false;go.textContent='Accept and send';return}
+  prev=payload;try{localStorage.setItem(key,JSON.stringify(payload))}catch(e){}
+  document.getElementById('accopen').textContent='Accepted ✓';
+  show(true,demo?'Preview only: nothing was sent.':`${M.company||'The contractor'} has been notified. Thank you, ${name.split(' ')[0]}.`)};
+}
+window.renderReport=d=>{const m=validate(d);if(m.length)console.warn('Report missing inputs:',m);render(d);applyTheme(d);mountBar(d);return m};
 window.validateReport=validate;
+window.addEventListener('beforeprint',()=>document.querySelectorAll('details').forEach(x=>x.open=true));
 window.addEventListener('message',e=>{if(e.data&&e.data.findings)window.renderReport(e.data)});
 const D0=load();if(D0)window.renderReport(D0);
 </script>
