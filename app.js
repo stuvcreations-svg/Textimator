@@ -69,14 +69,14 @@ function saveQuotes() {
 // =============================================================================
 const TXT = {
   en: {
-    hello: (n) => `Hi ${n}! 👋 Send me the roof photos whenever you're ready (one wide shot plus a few close-ups of damage), then tell me who the customer is and the property address.`,
+    hello: (n) => `Hi ${n}! 👋 Send me the roof photos whenever you're ready (one wide shot plus a few close-ups of damage), then tell me who the customer is and the property address. Got a roof measurement report? Send the PDF too.`,
     photoTip: '📸 Send roof photos when you can: a wide shot plus close-ups of damage.',
     gotPhotos: (n) => `📸 Got ${n} photo${n === 1 ? '' : 's'}.`,
     qAddr: "Who's the customer, and what's the property address?",
     qType: 'Is this a full replacement or a repair?',
     qSource: 'Is this a retail or an insurance job?',
     qClaim: "What's the claim number?",
-    qArea: 'About how many sq ft is the roof?',
+    qArea: 'About how many sq ft is the roof? Or send the measurement report (PDF).',
     qPriceRep: "What's the price for the Good, Better and Best? Like: 20k / 25k / 30k (one or two is fine)",
     qPriceRpr: 'What are the repairs and their prices? Like: flashing $300, 12 shingles $650. Or one total.',
     qExtras: 'Anything else? (shingles, warranties, discount, timeline, payment terms) Type it all in one message, or tap below.',
@@ -114,6 +114,12 @@ const TXT = {
     sPay: 'How do you usually get paid?',
     sTheme: 'Which look do you like for your reports?',
     setupDone: '✅ Saved! I will use these on every quote. Type "setup" any time to change them.',
+    readingMeasure: '📐 Reading your measurement report…',
+    measureOk: (line) => `📐 Got it: ${line}. I'll use these figures in the report.`,
+    notMeasure: "That doesn't look like a roof measurement report. I can read GAF QuickMeasure, EagleView and similar PDFs.",
+    measureFail: "I couldn't read that file. Please send the measurement report as a PDF again, or just type the roof area.",
+    pdfOnly: 'I can only read PDF reports. Please send the measurement report as a PDF.',
+    lblMeasure: '📐', facetsWord: 'facets',
     qStories: 'How many stories is the house?',
     qLeaks: 'Has the homeowner reported any leaks?',
     nudge: '👆 Tap one of the buttons, or type your answer.',
@@ -129,14 +135,14 @@ const TXT = {
     btn: { addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
-    hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección.`,
+    hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
     photoTip: '📸 Envía fotos del techo cuando puedas: una general y otras de cerca de los daños.',
     gotPhotos: (n) => `📸 Recibí ${n} foto${n === 1 ? '' : 's'}.`,
     qAddr: '¿Quién es el cliente y cuál es la dirección de la propiedad?',
     qType: '¿Es un reemplazo completo o una reparación?',
     qSource: '¿Es un trabajo particular o de seguro?',
     qClaim: '¿Cuál es el número de reclamo?',
-    qArea: '¿Cuántos pies cuadrados tiene el techo, más o menos?',
+    qArea: '¿Cuántos pies cuadrados tiene el techo, más o menos? O envía el informe de medición (PDF).',
     qPriceRep: '¿Cuál es el precio para Bueno, Mejor y Óptimo? Ej.: 20k / 25k / 30k (con uno o dos basta)',
     qPriceRpr: '¿Qué reparaciones harás y cuánto cuesta cada una? Ej.: flashing $300, 12 tejas $650. O un total.',
     qExtras: '¿Algo más? (tejas, garantías, descuento, plazo, forma de pago) Escríbelo todo en un mensaje, o toca abajo.',
@@ -174,6 +180,12 @@ const TXT = {
     sPay: '¿Cómo sueles cobrar?',
     sTheme: '¿Qué estilo prefieres para tus informes?',
     setupDone: '✅ ¡Guardado! Lo usaré en cada cotización. Escribe "setup" cuando quieras cambiarlo.',
+    readingMeasure: '📐 Leyendo tu informe de medición…',
+    measureOk: (line) => `📐 Listo: ${line}. Usaré estas medidas en el informe.`,
+    notMeasure: 'Eso no parece un informe de medición de techo. Puedo leer PDFs de GAF QuickMeasure, EagleView y similares.',
+    measureFail: 'No pude leer ese archivo. Envía el informe de medición en PDF otra vez, o escribe el área del techo.',
+    pdfOnly: 'Solo puedo leer informes en PDF. Envía el informe de medición como PDF.',
+    lblMeasure: '📐', facetsWord: 'facetas',
     qStories: '¿Cuántos pisos tiene la casa?',
     qLeaks: '¿El dueño ha reportado goteras?',
     nudge: '👆 Toca uno de los botones, o escribe tu respuesta.',
@@ -392,7 +404,7 @@ function freshData(profile) {
     repair: { items: null, total_price: null, labor_years: null },
     discount: null,
     payment: { mode: null, deposit: null, deposit_pct: null },
-    timeline_days: null, wood_pct: null, report_theme: null, extra_notes: null
+    timeline_days: null, wood_pct: null, report_theme: null, extra_notes: null, measurement: null
   };
   if (profile) {
     ['good', 'better', 'best'].forEach((k) => {
@@ -464,8 +476,18 @@ function blanks(s) {
   return out;
 }
 
+function measureLine(s) {
+  const m = s.data.measurement;
+  if (!m) return '';
+  const st = m.structures || [];
+  const facets = st.reduce((a, x) => a + (x.facets || 0), 0);
+  const pitch = (st.find((x) => x.pitch) || {}).pitch;
+  return [m.source || 'Measurement report', m.total_area_sqft ? `${Number(m.total_area_sqft).toLocaleString('en-US')} ${tx(s, 'areaWord')}` : '', facets ? `${facets} ${tx(s, 'facetsWord')}` : '', pitch || ''].filter(Boolean).join(' · ');
+}
+
 function extraLines(s) {
   const d = s.data; const out = [];
+  if (d.measurement) out.push(`${tx(s, 'lblMeasure')} ${measureLine(s)}`);
   if (d.leaks) out.push(`${tx(s, 'lblLeaks')} ${tx(s, d.leaks === 'yes' ? 'leaksYes' : d.leaks === 'no' ? 'leaksNo' : 'leaksUnknown')}`);
   const shingles = [...new Set(['good', 'better', 'best'].map((k) => d.tiers[k].shingle).filter(Boolean))];
   if (!isRepair(s) && shingles.length) out.push(`${tx(s, 'lblShingle')} ${shingles.join(' / ')}`);
@@ -624,6 +646,13 @@ function applyIntake(d, s) {
     });
     delete d.repair;
   }
+  // Anything about measurements, buildings, simulations or financing that the model wrote is thrown away:
+  // these exist only when real data backs them, and the contractor uploaded no such data except a measurement report.
+  ['measurements', 'measuredPage', 'simulation', 'financing', 'buildings', 'scope', 'compare', 'itemIntro', 'itemNote', 'priceBullets', 'priceSubtitle', 'priceLabel'].forEach((k) => { delete d[k]; });
+  ['pitchNote', 'areaNote', 'roofBit', 'measureSource', 'measureDate', 'facets'].forEach((k) => { delete d.meta[k]; });
+  (d.problemsTable || []).forEach((r) => { delete r.building; });
+  (d.findings || []).forEach((f) => { delete f.building; });
+  if (D.measurement) applyMeasurement(d, D.measurement);
   return d;
 }
 
@@ -847,6 +876,7 @@ async function onImage(s, to, message) {
     if (logo) s.draft.logoFile = logo;
     return setupNext(s, to);
   }
+  if (/measure|medici[oó]n|eagleview|quickmeasure|hover|roofr/i.test(message.image.caption || '')) return onMeasurement(s, to, { id: message.image.id, mime: 'image/jpeg' });
   const file = await downloadWhatsAppImage(message.image.id);
   if (!file) return sendText(to, tx(s, 'hiccup'));
   s.images.push({ id: String(s.images.length + 1), file, caption: message.image.caption || '' });
@@ -867,6 +897,148 @@ async function photosSettled(s, to) {
   if (s.awaiting === 'confirm') return sendText(to, ack);
   await sendText(to, ack);
   return advance(s, to);
+}
+
+// ----- Roof measurement report (PDF). Created ONLY when the contractor uploads one. -----
+const MEASURE_PROMPT = `You read a roof measurement report (GAF QuickMeasure, EagleView, Hover, Roofr or similar). Return ONLY JSON:
+{"is_measurement_report": true, "source": "GAF QuickMeasure", "report_date": "17 September 2026", "structures": [{"name": "Main house", "area_sqft": 1877, "facets": 9, "pitch": "5/12", "low_slope_area_sqft": 64, "ridges_ft": 91, "hips_ft": 0, "valleys_ft": 66, "rakes_ft": 119, "eaves_ft": 95, "bends_ft": 8, "drip_edge_ft": 215, "step_flashing_ft": 28, "other_flashing_ft": 6}], "total_area_sqft": 1877, "diagram_page": 2}
+RULES: copy ONLY numbers that are printed in the report. Use null for anything not printed. Never calculate, round, estimate or invent a number. If the report lists several structures, list each one. "pitch" is the predominant pitch like "5/12". "diagram_page" is the 1-based number of the page that shows the roof drawing with edge lengths, or null. If the file is NOT a roof measurement report, return {"is_measurement_report": false}.`;
+const BOX_PROMPT = 'This is one page of a roof measurement report. Return ONLY JSON {"box": [ymin, xmin, ymax, xmax]} with coordinates from 0 to 1000: a tight box around the roof drawing (the diagram with edge lengths and its colour legend). Exclude page headers, titles, tables and logos. If there is no roof drawing, return {"box": null}.';
+
+let pdfTools = null; let pdfToolsTried = false;
+async function loadPdfTools() {
+  if (pdfToolsTried) return pdfTools;
+  pdfToolsTried = true;
+  try {
+    pdfTools = { pdfjs: await import('pdfjs-dist/legacy/build/pdf.mjs'), createCanvas: require('@napi-rs/canvas').createCanvas };
+  } catch (e) {
+    console.error('ℹ️ PDF diagram tools are not installed, so the measurement diagram will be skipped:', e.message);
+    pdfTools = null;
+  }
+  return pdfTools;
+}
+
+// Renders the page that holds the roof drawing, asks Gemini where the drawing is, and crops it.
+async function cropDiagram(buffer, pageNum) {
+  const tools = await loadPdfTools();
+  if (!tools) return null;
+  const doc = await tools.pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, verbosity: 0 }).promise;
+  if (!Number.isInteger(pageNum) || pageNum < 1 || pageNum > doc.numPages) return null;
+  const page = await doc.getPage(pageNum);
+  const vp = page.getViewport({ scale: 2.2 });
+  const canvas = tools.createCanvas(Math.floor(vp.width), Math.floor(vp.height));
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp, canvas }).promise;
+  const data = await callGemini({
+    system: BOX_PROMPT,
+    parts: [{ inline_data: { mime_type: 'image/jpeg', data: canvas.toBuffer('image/jpeg', 70).toString('base64') } }, { text: 'Return the box.' }],
+    temperature: 0
+  });
+  const raw = geminiText(data);
+  const box = raw ? parseJsonText(raw).box : null;
+  if (!Array.isArray(box) || box.length !== 4 || box.some((n) => typeof n !== 'number')) return null;
+  const [y0, x0, y1, x1] = box.map((n) => Math.max(0, Math.min(1000, n)));
+  if (y1 - y0 < 80 || x1 - x0 < 80) return null; // too small to be a drawing
+  const pad = 15;
+  const sx = Math.floor(canvas.width * Math.max(0, x0 - pad) / 1000), sy = Math.floor(canvas.height * Math.max(0, y0 - pad) / 1000);
+  const sw = Math.floor(canvas.width * Math.min(1000, x1 + pad) / 1000) - sx, sh = Math.floor(canvas.height * Math.min(1000, y1 + pad) / 1000) - sy;
+  const out = tools.createCanvas(sw, sh);
+  out.getContext('2d').drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+  return out.toBuffer('image/jpeg', 85);
+}
+
+async function readMeasurementReport(buffer, mime) {
+  const data = await callGemini({
+    system: MEASURE_PROMPT,
+    parts: [{ inline_data: { mime_type: mime, data: buffer.toString('base64') } }, { text: 'Read this report and return the JSON.' }],
+    temperature: 0
+  });
+  const raw = geminiText(data);
+  if (!raw) throw new Error('Measurement reader returned nothing');
+  const j = parseJsonText(raw);
+  if (!j.is_measurement_report) return { notReport: true };
+  const keys = ['area_sqft', 'facets', 'low_slope_area_sqft', 'ridges_ft', 'hips_ft', 'valleys_ft', 'rakes_ft', 'eaves_ft', 'bends_ft', 'drip_edge_ft', 'step_flashing_ft', 'other_flashing_ft'];
+  const structures = (Array.isArray(j.structures) ? j.structures : []).map((x) => {
+    const o = { name: String(x.name || '').trim() || null, pitch: x.pitch ? String(x.pitch).trim() : null };
+    keys.forEach((k) => { o[k] = toNum(x[k]); });
+    return o;
+  }).filter((x) => keys.some((k) => x[k] != null));
+  let total = toNum(j.total_area_sqft);
+  if (total == null && structures.length && structures.every((x) => x.area_sqft != null)) total = structures.reduce((a, x) => a + x.area_sqft, 0);
+  if (!structures.length && total == null) return { notReport: true };
+  let diagramFile = null;
+  if (mime === 'application/pdf' && j.diagram_page) {
+    try {
+      const jpg = await cropDiagram(buffer, Number(j.diagram_page));
+      if (jpg) { diagramFile = `diagram_${crypto.randomBytes(6).toString('hex')}.jpg`; fs.writeFileSync(path.join(publicDir, diagramFile), jpg); }
+    } catch (e) { console.error('ℹ️ Diagram skipped:', e.message); }
+  }
+  return { source: String(j.source || '').trim() || null, date: String(j.report_date || '').trim() || null, structures, total_area_sqft: total, diagramFile };
+}
+
+async function onMeasurement(s, to, file) {
+  await sendText(to, tx(s, 'readingMeasure'));
+  let r;
+  try {
+    const media = await fetchMedia(file.id);
+    if (media.buffer.length > 15 * 1024 * 1024) throw new Error('File too large');
+    r = await readMeasurementReport(media.buffer, file.mime || media.mime);
+  } catch (err) {
+    console.error('❌ Measurement report error:', err);
+    return sendText(to, tx(s, 'measureFail'));
+  }
+  if (r.notReport) return sendText(to, tx(s, 'notMeasure'));
+  s.data.measurement = r;
+  if (r.total_area_sqft) s.data.roof_area_sqft = r.total_area_sqft;
+  const pitch = (r.structures.find((x) => x.pitch) || {}).pitch;
+  if (pitch && !s.data.pitch) s.data.pitch = pitch;
+  await sendText(to, tx(s, 'measureOk', measureLine(s)));
+  if (s.stage === 'building') return null;
+  if (s.stage === 'done') return doBuild(s, to, s.host);
+  if (s.stage === 'confirm' || s.stage === 'changing') { s.stage = 'confirm'; return showConfirm(s, to); }
+  if (s.stage === 'new') s.stage = 'collect';
+  if (!s.awaiting || s.awaiting === 'area') return advance(s, to);
+  return null;
+}
+
+async function onDocument(s, to, message) {
+  const doc = message.document || {};
+  const isPdf = String(doc.mime_type || '').toLowerCase() === 'application/pdf' || /\.pdf$/i.test(doc.filename || '');
+  if (!isPdf) return sendText(to, tx(s, 'pdfOnly'));
+  return onMeasurement(s, to, { id: doc.id, mime: 'application/pdf' });
+}
+
+// Turns what the report said into the pieces the template shows. Called only when a report was uploaded.
+function applyMeasurement(d, m) {
+  const st = m.structures || [];
+  const sum = (k) => (st.some((x) => x[k] != null) ? st.reduce((a, x) => a + (x[k] || 0), 0) : null);
+  d.measurements = { ridges: sum('ridges_ft'), hips: sum('hips_ft'), valleys: sum('valleys_ft'), rakes: sum('rakes_ft'), eaves: sum('eaves_ft'), bends: sum('bends_ft'), drip: sum('drip_edge_ft'), step: sum('step_flashing_ft'), flash: sum('other_flashing_ft') };
+  const fmt = (n) => Number(n).toLocaleString('en-US');
+  const multi = st.length > 1;
+  const facets = sum('facets');
+  const pitch = (st.find((x) => x.pitch) || {}).pitch || null;
+  const total = m.total_area_sqft != null ? m.total_area_sqft : sum('area_sqft');
+  if (total != null) d.meta.areaSqFt = total;
+  if (pitch) d.meta.pitch = pitch;
+  d.meta.facets = facets;
+  d.meta.measureSource = m.source || 'the measurement report';
+  d.meta.measureDate = m.date || '';
+  if (multi && st.every((x) => x.area_sqft != null)) d.meta.areaNote = st.map((x, i) => `${(x.name || `structure ${i + 1}`).toLowerCase()} ${fmt(x.area_sqft)}`).join(' · ');
+  d.meta.pitchNote = facets ? `${facets} facets${multi ? ', all structures' : ''}` : '';
+  if (pitch) d.meta.roofBit = multi ? `${pitch} main pitch` : `${pitch} pitch`;
+  const rowsOf = (x) => [
+    ['Roof area', x.area_sqft != null ? `${fmt(x.area_sqft)} sq ft` : null], ['Roof facets', x.facets], ['Predominant pitch', x.pitch],
+    ['Low-slope area', x.low_slope_area_sqft != null ? `${fmt(x.low_slope_area_sqft)} sq ft` : null],
+    ['Ridges', x.ridges_ft], ['Hips', x.hips_ft], ['Valleys', x.valleys_ft], ['Rakes', x.rakes_ft], ['Eaves', x.eaves_ft], ['Bends', x.bends_ft],
+    ['Drip edge', x.drip_edge_ft], ['Step flashing', x.step_flashing_ft], ['Other flashing', x.other_flashing_ft]
+  ].filter((r) => r[1] != null && r[1] !== '').map(([k, v]) => [k, typeof v === 'number' && !['Roof facets'].includes(k) ? `${fmt(v)} ft` : String(v)]);
+  let diagramSrc = '';
+  try { if (m.diagramFile) diagramSrc = `data:image/jpeg;base64,${fs.readFileSync(path.join(publicDir, m.diagramFile)).toString('base64')}`; } catch (e) { diagramSrc = ''; }
+  d.measuredPage = {
+    intro: `The roof was measured by ${m.source || 'the report supplied'}${m.date ? `, ${m.date}` : ''}. Every quantity in the pricing comes from these figures.`,
+    diagramSrc, diagramCaption: `Roof lengths${m.source ? ` · ${m.source}` : ''}`,
+    groups: st.map((x, i) => ({ title: x.name || (multi ? `Structure ${i + 1}` : 'Roof'), source: m.source || '', rows: rowsOf(x) })).filter((g) => g.rows.length),
+    total: multi && total != null ? ['Total roof area', `${fmt(total)} sq ft`] : null
+  };
 }
 
 // ----- One-time setup: company, usual shingles and warranties, how you get paid, look of the reports -----
@@ -1029,6 +1201,9 @@ app.post('/', async (req, res) => {
       } else if (message.type === 'image') {
         console.log(`📸 Image from ${name}`);
         await onImage(s, phone, message);
+      } else if (message.type === 'document') {
+        console.log(`📎 Document from ${name}`);
+        await onDocument(s, phone, message);
       } else if (message.type === 'audio') {
         console.log(`🎤 Voice note from ${name}`);
         await onAudio(s, phone, message, host, phone);

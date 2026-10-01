@@ -1,15 +1,17 @@
 {
-  "name": "roofing-quote-bot",
+  "name": "textimator",
   "version": "1.0.0",
-  "description": "WhatsApp Roofing Intake & Estimate Generator",
+  "description": "WhatsApp roofing estimate assistant",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
   },
-  "dependencies": {
-    "express": "^4.19.2"
-  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "1.0.10",
+    "express": "^5.2.1",
+    "pdfjs-dist": "6.3.289"
   }
 }
