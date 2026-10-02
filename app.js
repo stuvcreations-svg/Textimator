@@ -160,6 +160,28 @@ const TXT = {
     myQuotesHead: 'Your latest reports:',
     myQuotesNone: "You haven't created any reports yet.",
     qAccepted: '✅ accepted', qSent: '⏳ waiting',
+    termsIntro: 'These are the payment terms your customers will see in your reports:',
+    termsKeepAsk: 'Keep these, or change them?',
+    qState: 'Which state do you work in? Type it, like CA or Florida. I use it to add any state-specific wording.',
+    needState: "I didn't recognize that state. Type the 2-letter code, like CA, or tap Skip.",
+    qMode: 'How do you usually get paid?',
+    qDeposit: 'How much is the deposit at signing? Type an amount like 1000, or a percent like 10%.',
+    qStages: (cur) => `How is the balance paid? Yours is ${cur}. Tap Keep, or type your split, like 50/30/20 (2 to 5 numbers that add up to 100).`,
+    badStages: (sum) => `Those add up to ${sum}, not 100. Try again, like 50/30/20.`,
+    badStagesCount: 'Please give 2 to 5 numbers that add up to 100, like 50/30/20.',
+    qTime: "What's the longest a job usually takes, in days?",
+    qValid: 'How many days is a quote valid?',
+    qWood: 'Up to what percent of the deck wood do you replace within the price?',
+    badNumber: 'Please type just a number.',
+    termsSaved: '✅ Saved. Your reports will use these terms. Type "terms" any time to change them.',
+    tKeepBtn: (v) => `Keep ${v}`,
+    tDaysShort: (n) => `${n} days`,
+    tOnCompletion: 'Paid on completion',
+    tDepositBalance: (dep) => `${dep} deposit, balance on completion`,
+    tDepositStages: (dep, pcts) => `${dep} deposit, then the balance in ${pcts.length} stages (${pcts.join('/')})`,
+    tTime: (n) => `up to ${n} days`,
+    tValid: (n) => `quote valid ${n} days`,
+    tWood: (n) => `deck wood up to ${n}%`,
     qStories: 'How many stories is the house?',
     qLeaks: 'Has the homeowner reported any leaks?',
     nudge: '👆 Tap one of the buttons, or type your answer.',
@@ -172,7 +194,7 @@ const TXT = {
     sLicense: "What's your license number?",
     sColor: 'Brand color? Tap one, or type a code like #1A5FB4.',
     sLogo: 'Send your logo as an image.',
-    btn: { yesMe: "Yes, that's me", noLogo: 'No logo', serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    btn: { termsKeep: 'Keep these', termsChange: 'Change', tModeStages: 'Deposit + stages', tModePoc: 'Pay on completion', tModeDb: 'Deposit + balance', yesMe: "Yes, that's me", noLogo: 'No logo', serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
@@ -253,6 +275,28 @@ const TXT = {
     myQuotesHead: 'Tus últimos informes:',
     myQuotesNone: 'Todavía no has creado informes.',
     qAccepted: '✅ aceptado', qSent: '⏳ en espera',
+    termsIntro: 'Estos son los términos de pago que verán tus clientes en tus informes:',
+    termsKeepAsk: '¿Los dejamos así o los cambiamos?',
+    qState: '¿En qué estado trabajas? Escríbelo, como CA o Florida. Lo uso para agregar textos propios de cada estado.',
+    needState: 'No reconocí ese estado. Escribe el código de 2 letras, como CA, o toca Omitir.',
+    qMode: '¿Cómo sueles cobrar?',
+    qDeposit: '¿Cuánto es el depósito al firmar? Escribe un monto como 1000, o un porcentaje como 10%.',
+    qStages: (cur) => `¿Cómo se paga el saldo? El tuyo es ${cur}. Toca Mantener, o escribe tu división, como 50/30/20 (de 2 a 5 números que sumen 100).`,
+    badStages: (sum) => `Suman ${sum}, no 100. Inténtalo de nuevo, como 50/30/20.`,
+    badStagesCount: 'Dame de 2 a 5 números que sumen 100, como 50/30/20.',
+    qTime: '¿Cuál es lo máximo que suele tardar un trabajo, en días?',
+    qValid: '¿Cuántos días es válida una cotización?',
+    qWood: '¿Hasta qué porcentaje de la madera del deck reemplazas dentro del precio?',
+    badNumber: 'Por favor escribe solo un número.',
+    termsSaved: '✅ Guardado. Tus informes usarán estos términos. Escribe "términos" cuando quieras cambiarlos.',
+    tKeepBtn: (v) => `Mantener ${v}`,
+    tDaysShort: (n) => `${n} días`,
+    tOnCompletion: 'Se paga al terminar',
+    tDepositBalance: (dep) => `depósito de ${dep}, saldo al terminar`,
+    tDepositStages: (dep, pcts) => `depósito de ${dep}, luego el saldo en ${pcts.length} etapas (${pcts.join('/')})`,
+    tTime: (n) => `hasta ${n} días`,
+    tValid: (n) => `cotización válida ${n} días`,
+    tWood: (n) => `madera del deck hasta ${n}%`,
     qStories: '¿Cuántos pisos tiene la casa?',
     qLeaks: '¿El dueño ha reportado goteras?',
     nudge: '👆 Toca uno de los botones, o escribe tu respuesta.',
@@ -265,7 +309,7 @@ const TXT = {
     sLicense: '¿Cuál es tu número de licencia?',
     sColor: '¿Color de tu marca? Toca uno, o escribe un código como #1A5FB4.',
     sLogo: 'Envía tu logo como imagen.',
-    btn: { yesMe: 'Sí, soy yo', noLogo: 'Sin logo', serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    btn: { termsKeep: 'Dejarlos así', termsChange: 'Cambiar', tModeStages: 'Depósito + etapas', tModePoc: 'Al terminar', tModeDb: 'Depósito + saldo', yesMe: 'Sí, soy yo', noLogo: 'Sin logo', serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -560,6 +604,46 @@ async function extract(s, text) {
 // =============================================================================
 // 4. JOB DATA AND SESSIONS
 // =============================================================================
+// ----- Each contractor's own payment terms: what the report promises customers -----
+const DEFAULT_STAGES = [['Start of demolition', 40], ['Material delivery', 30], ['Materials installed', 25], ['Final inspection', 5]];
+const STAGE_LABELS = {
+  2: ['Start of work', 'Final inspection'],
+  3: ['Start of work', 'Materials installed', 'Final inspection'],
+  4: ['Start of demolition', 'Material delivery', 'Materials installed', 'Final inspection'],
+  5: ['Start of work', 'Material delivery', 'Materials installed', 'Roof complete', 'Final inspection']
+};
+const defaultTerms = () => ({ paymentMode: 'standard', deposit: 1000, depositPct: null, stages: DEFAULT_STAGES.map((x) => [...x]), timelineDays: 7, validityDays: 30, woodPct: 20, state: '' });
+const STATES = { alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA', colorado: 'CO', connecticut: 'CT', delaware: 'DE', 'district of columbia': 'DC', florida: 'FL', georgia: 'GA', hawaii: 'HI', idaho: 'ID', illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS', kentucky: 'KY', louisiana: 'LA', maine: 'ME', maryland: 'MD', massachusetts: 'MA', michigan: 'MI', minnesota: 'MN', mississippi: 'MS', missouri: 'MO', montana: 'MT', nebraska: 'NE', nevada: 'NV', 'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND', ohio: 'OH', oklahoma: 'OK', oregon: 'OR', pennsylvania: 'PA', 'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD', tennessee: 'TN', texas: 'TX', utah: 'UT', vermont: 'VT', virginia: 'VA', washington: 'WA', 'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY' };
+function parseState(t) {
+  const x = String(t || '').trim().toLowerCase().replace(/\./g, '');
+  if (/^[a-z]{2}$/.test(x)) return Object.values(STATES).includes(x.toUpperCase()) ? x.toUpperCase() : '';
+  return STATES[x] || '';
+}
+const depositNoteFor = (state) => (state === 'CA' ? 'California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less.' : '');
+
+// The terms that apply to THIS quote: the contractor's saved terms, with anything typed for this quote on top.
+function effectiveTerms(s) {
+  const T = { ...defaultTerms(), ...((s.profile && s.profile.terms) || {}) };
+  const D = s.data; const repair = isRepair(s);
+  return {
+    paymentMode: D.payment.mode || (repair ? 'on_completion' : T.paymentMode),
+    deposit: D.payment.deposit != null ? D.payment.deposit : T.deposit,
+    depositPct: D.payment.deposit_pct != null ? D.payment.deposit_pct : (D.payment.deposit != null ? null : T.depositPct),
+    stages: T.stages,
+    timelineDays: D.timeline_days != null ? D.timeline_days : (repair ? null : T.timelineDays),
+    validityDays: T.validityDays,
+    woodPct: D.wood_pct != null ? D.wood_pct : T.woodPct,
+    state: T.state || '',
+    depositNote: depositNoteFor(T.state)
+  };
+}
+function fmtTerms(s, T, repair) {
+  const dep = T.depositPct != null ? `${T.depositPct}%` : money(T.deposit);
+  const pay = T.paymentMode === 'on_completion' ? tx(s, 'tOnCompletion') : T.paymentMode === 'deposit_balance' ? tx(s, 'tDepositBalance', dep) : tx(s, 'tDepositStages', dep, (T.stages || []).map((x) => x[1]));
+  return [pay, T.timelineDays != null ? tx(s, 'tTime', T.timelineDays) : '', tx(s, 'tValid', T.validityDays), repair ? '' : tx(s, 'tWood', T.woodPct)].filter(Boolean).join(' · ');
+}
+const termsLine = (s) => fmtTerms(s, effectiveTerms(s), isRepair(s));
+
 function freshData(profile) {
   const d = {
     customer_name_and_address: null, job_type: null, lead_source: null, claim_number: null,
@@ -577,9 +661,6 @@ function freshData(profile) {
       if (t.labor_years != null) d.tiers[k].labor_years = t.labor_years;
       if (t.mfr_warranty) d.tiers[k].mfr_warranty = t.mfr_warranty;
     });
-    if (profile.payment && profile.payment.mode) d.payment = { ...d.payment, ...profile.payment };
-    if (profile.timeline_days != null) d.timeline_days = profile.timeline_days;
-    if (profile.wood_pct != null) d.wood_pct = profile.wood_pct;
     if (profile.theme) d.report_theme = profile.theme;
   }
   return d;
@@ -666,9 +747,7 @@ function extraLines(s) {
   if (!isRepair(s) && shingles.length) out.push(`${tx(s, 'lblShingle')} ${shingles.join(' / ')}`);
   const yrs = (isRepair(s) ? [d.repair.labor_years] : ['good', 'better', 'best'].map((k) => d.tiers[k].labor_years)).filter((v) => v != null);
   if (yrs.length) out.push(`${tx(s, 'lblWarranty')} ${tx(s, 'workmanship')} ${yrs.join(' / ')} ${tx(s, 'yrsWord')}`);
-  const pm = d.payment && d.payment.mode;
-  if (pm) out.push(`${tx(s, 'lblPay')} ${pm === 'on_completion' ? tx(s, 'payCompletion') : pm === 'deposit_balance' ? tx(s, 'payDepositBalance') : tx(s, 'payStages')}`);
-  if (d.timeline_days != null) out.push(`${tx(s, 'lblTime')} ${tx(s, 'upTo', d.timeline_days)}`);
+  out.push(`${tx(s, 'lblPay')} ${termsLine(s)}`);
   return out;
 }
 
@@ -754,6 +833,7 @@ async function showConfirm(s, to) {
     s.awaiting = 'photo';
     return sendText(to, tx(s, 'needPhoto'));
   }
+  if (needsTerms(s)) return startTerms(s, to, true);
   s.stage = 'confirm';
   s.awaiting = 'confirm';
   const confirmBtns = [{ id: 'build', title: btn(s, 'build') }];
@@ -825,14 +905,8 @@ function applyIntake(d, s) {
   } catch (e) { logo = ''; }
   d.meta.brand = { phone: P.phone || '', whatsapp: P.phone || '', license: P.license || '', color: P.brandColor || '', logo, logoBg: P.logoBg || '#ffffff' };
   d.discount = D.discount && D.discount !== 'none' ? { pct: D.discount.pct, name: String(D.discount.name || 'customer').toLowerCase() } : null;
-  d.terms = {
-    paymentMode: D.payment.mode || (isRepair(s) ? 'on_completion' : 'standard'),
-    deposit: D.payment.deposit != null ? D.payment.deposit : 1000,
-    depositPct: D.payment.deposit_pct != null ? D.payment.deposit_pct : null,
-    validityDays: 30,
-    timelineDays: D.timeline_days != null ? D.timeline_days : (isRepair(s) ? null : 7),
-    woodPct: D.wood_pct != null ? D.wood_pct : 20
-  };
+  const ET = effectiveTerms(s);
+  d.terms = { paymentMode: ET.paymentMode, deposit: ET.deposit, depositPct: ET.depositPct, stages: ET.stages, validityDays: ET.validityDays, timelineDays: ET.timelineDays, woodPct: ET.woodPct, state: ET.state, depositNote: ET.depositNote };
   if (isRepair(s)) {
     const src = D.repair.items || [];
     const fromModel = (d.repair && d.repair.items) || [];
@@ -915,6 +989,13 @@ async function doBuild(s, to, host) {
     const said = `${(d.verdict && d.verdict.headline) || ''} ${(d.verdict && d.verdict.paragraph) || ''}`;
     if (s.data.condition && s.data.condition !== 'end_of_life' && /end of (its )?life|worn through|beyond repair/i.test(said)) {
       d.flags.push(`CHECK: You rated the shingles "${s.data.condition === 'monitor' ? 'Monitor' : 'Serviceable'}", but the summary text sounds more severe. Read "The one thing to know" before sending.`);
+    }
+    const TT = d.terms || {};
+    const lowest = (d.options || []).map((o) => o.listPrice).filter((v) => v != null);
+    if (TT.state === 'CA' && TT.paymentMode !== 'on_completion' && lowest.length) {
+      const price = d.discount ? Math.round(Math.min(...lowest) * (1 - d.discount.pct / 100)) : Math.min(...lowest);
+      const dep = Math.min(price, TT.depositPct != null ? Math.round(price * TT.depositPct / 100) : TT.deposit);
+      if (dep > Math.min(1000, price * 0.1) + 0.5) d.flags.push(`CHECK: California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less. Your deposit of ${money(dep)} on ${money(price)} is above that.`);
     }
     const b = blanks(s);
     if (b.length) d.flags.push(`DRAFT: still blank: ${b.join(', ')}.`);
@@ -1011,13 +1092,11 @@ function buildConfirm(d, s) {
 function payRows(final, t) {
   const p = Number(final);
   if (t.paymentMode === 'on_completion') return [['On completion, after final inspection', p]];
-  if (t.paymentMode === 'deposit_balance') {
-    const dep = Math.min(p, t.depositPct != null ? Math.round(p * t.depositPct / 100) : t.deposit);
-    return [['At signing (deposit)', dep], ['On completion, after final inspection', +(p - dep).toFixed(2)]];
-  }
-  const dep = Math.min(p, t.deposit != null ? t.deposit : 1000);
+  const dep = Math.min(p, t.depositPct != null ? Math.round(p * t.depositPct / 100) : (t.deposit != null ? t.deposit : 1000));
+  if (t.paymentMode === 'deposit_balance') return [['At signing (deposit)', dep], ['On completion, after final inspection', +(p - dep).toFixed(2)]];
   const bal = Math.max(0, p - dep);
-  return [['At signing (deposit)', dep], ['Start of demolition (40% of the balance)', +(bal * 0.4).toFixed(2)], ['Material delivery (30%)', +(bal * 0.3).toFixed(2)], ['Materials installed (25%)', +(bal * 0.25).toFixed(2)], ['Final inspection (5%)', +(bal * 0.05).toFixed(2)]];
+  const st = t.stages && t.stages.length ? t.stages : DEFAULT_STAGES;
+  return [['At signing (deposit)', dep], ...st.map(([l, pct]) => [`${l} (${pct}% of the balance)`, +(bal * pct / 100).toFixed(2)])];
 }
 
 // One clean page: who accepted what, for how much, when, and on which terms.
@@ -1089,6 +1168,7 @@ function writeConfirmationPdf(file, c, acc, reportUrl, token, chosen) {
       if (acc.price != null) {
         section('Payment');
         payRows(acc.price, T).forEach(([k, v]) => amt(k, moneyC2(v)));
+        if (T.depositNote && T.paymentMode === 'standard') { doc.moveDown(0.15); doc.font('Helvetica').fontSize(8.5).fillColor(gray).text(t(T.depositNote), L, doc.y, { width: W }); }
       }
 
       section('Scope of work');
@@ -1104,7 +1184,7 @@ function writeConfirmationPdf(file, c, acc, reportUrl, token, chosen) {
 
       section('Terms');
       const terms = [];
-      if (T.timelineDays) terms.push(`The job is complete in up to ${T.timelineDays} days${c.jobType === 'repair' ? '' : ' from the start of demolition'}, weather permitting.`);
+      if (T.timelineDays) terms.push(`The job is complete in up to ${T.timelineDays} days${c.jobType === 'repair' ? '' : ` from the ${((c.terms && c.terms.stages && c.terms.stages[0]) || ['start of demolition'])[0].toLowerCase()}`}, weather permitting.`);
       terms.push('Nothing outside this scope is done without a written change order signed by the homeowner, with the price stated first.');
       if (c.jobType !== 'repair') terms.push(`Damaged wood beyond ${T.woodPct != null ? T.woodPct : 20}% of the deck is shown to the homeowner and priced in writing before it is replaced.`);
       terms.push(`The quoted price holds for ${T.validityDays || 30} days from ${c.reportDate}.`);
@@ -1184,6 +1264,7 @@ const NEW_RE = /^(new quote|new|start over|reset|nueva cotizaci[oó]n|nueva|empe
 const MYQ_RE = /^(my quotes|quotes|history|my reports|mis cotizaciones|historial|mis informes)$/i;
 const ENROLL_RE = /^(company|logo|my company|company name|empresa|mi empresa)$/i;
 const NAME_RE = /^(my name|name|mi nombre|nombre)$/i;
+const TERMS_RE = /^(terms|my terms|payment terms|términos|terminos|mis términos|mis terminos)$/i;
 const SETUP_RE = /^(setup|set up|settings|profile|my settings|configurar|ajustes|perfil)$/i;
 const GREET_RE = /^(hi|hello|hey|hola|start|empezar|buenas|buenos d[ií]as)\b[\s!.,]*$/i;
 
@@ -1236,6 +1317,7 @@ async function onText(s, to, text, host, phone) {
   if (MYQ_RE.test(low)) return showMyQuotes(s, to);
   if (ENROLL_RE.test(low)) return startEnroll(s, to, 'change', false);
   if (NAME_RE.test(low)) return startEnroll(s, to, 'rep', false);
+  if (TERMS_RE.test(low)) return startTerms(s, to, false);
   if (SETUP_RE.test(low)) return startSetup(s, to);
   if (s.stage === 'setup') return setupText(s, to, text);
   if (s.stage === 'new') {
@@ -1320,7 +1402,7 @@ function schedulePhotoAck(s, to) {
 async function photosSettled(s, to) {
   const ok = s.batchOk || 0; const failed = s.batchFailed || 0; const unavailable = s.batchUnavailable || 0;
   s.batchOk = 0; s.batchFailed = 0; s.batchUnavailable = 0;
-  if (s.stage === 'building' || s.stage === 'enroll' || (!ok && !failed && !unavailable)) return null;
+  if (s.stage === 'building' || s.stage === 'enroll' || s.stage === 'terms' || (!ok && !failed && !unavailable)) return null;
   const problems = [failed ? tx(s, 'photosFailed', failed) : '', unavailable ? tx(s, 'photosUnavailable', unavailable) : ''].filter(Boolean).join(' ');
   const got = ok || s.images.length ? tx(s, 'gotPhotos', s.images.length) : '';
   const ack = [got, problems].filter(Boolean).join(' ');
@@ -1482,7 +1564,7 @@ function applyMeasurement(d, m) {
 function needsEnrollment(phone) {
   const p = getProfile(phone);
   if (p && p.company) return false;
-  if (AUTO_ENROLL) { saveProfile(phone, { ...(p || {}), company: AUTO_ENROLL, rep: (p && p.rep) || 'Test Rep' }); return false; }
+  if (AUTO_ENROLL) { saveProfile(phone, { ...(p || {}), company: AUTO_ENROLL, rep: (p && p.rep) || 'Test Rep', terms: (p && p.terms) || defaultTerms() }); return false; }
   return true;
 }
 
@@ -1622,6 +1704,124 @@ async function finishEnroll(s, to) {
   return sendText(to, tx(s, 'hello', firstName(greetName(s))));
 }
 
+// ----- Terms: confirmed once before the first report, and editable any time with "terms" -----
+const needsTerms = (s) => !(s.profile && s.profile.terms);
+
+async function startTerms(s, to, forced) {
+  s.prevStage = s.stage === 'terms' ? s.prevStage : s.stage;
+  s.stage = 'terms';
+  const cur = (s.profile && s.profile.terms) || null;
+  s.termsDraft = { ...defaultTerms(), ...(cur || {}), stages: ((cur && cur.stages) || DEFAULT_STAGES).map((x) => [...x]) };
+  s.termsForced = Boolean(forced);
+  s.termsChanging = false; // first the state (if unknown), then the summary with Keep / Change; Change asks every question
+  if (!cur || !s.termsDraft.state) return termsAsk(s, to, 'terms_state');
+  return termsSummary(s, to);
+}
+
+async function termsSummary(s, to) {
+  s.awaiting = 'terms_confirm';
+  const T = s.termsDraft;
+  return sendButtons(to, `${tx(s, 'termsIntro')}\n\n💳 ${fmtTerms(s, T, false)}${T.state ? `\n📍 ${T.state}` : ''}\n\n${tx(s, 'termsKeepAsk')}`, [{ id: 'terms:keep', title: btn(s, 'termsKeep') }, { id: 'terms:change', title: btn(s, 'termsChange') }]);
+}
+
+async function termsAsk(s, to, step) {
+  const T = s.termsDraft; s.awaiting = step;
+  const keep = (v) => ({ id: 'tkeep', title: tx(s, 'tKeepBtn', v).slice(0, 20) });
+  switch (step) {
+    case 'terms_state': return sendButtons(to, tx(s, 'qState'), [...(T.state ? [keep(T.state)] : []), { id: 'tskip', title: btn(s, 'skip') }]);
+    case 'terms_mode': return sendButtons(to, tx(s, 'qMode'), [{ id: 'tmode:standard', title: btn(s, 'tModeStages') }, { id: 'tmode:poc', title: btn(s, 'tModePoc') }, { id: 'tmode:db', title: btn(s, 'tModeDb') }]);
+    case 'terms_deposit': return sendText(to, tx(s, 'qDeposit'));
+    case 'terms_stages': { const cur = T.stages.map((x) => x[1]).join('/'); return sendButtons(to, tx(s, 'qStages', cur), [keep(cur)]); }
+    case 'terms_time': return sendButtons(to, tx(s, 'qTime'), [keep(tx(s, 'tDaysShort', T.timelineDays))]);
+    case 'terms_valid': return sendButtons(to, tx(s, 'qValid'), [keep(tx(s, 'tDaysShort', T.validityDays))]);
+    case 'terms_wood': return sendButtons(to, tx(s, 'qWood'), [keep(`${T.woodPct}%`)]);
+    default: return termsSummary(s, to);
+  }
+}
+
+// After an answer: the next question that applies to this payment type, or the end
+async function termsAfter(s, to, step) {
+  const T = s.termsDraft;
+  if (step === 'terms_state' && !s.termsChanging) return termsSummary(s, to);
+  const order = ['terms_state', 'terms_mode', 'terms_deposit', 'terms_stages', 'terms_time', 'terms_valid', 'terms_wood'];
+  for (let i = order.indexOf(step) + 1; i < order.length; i++) {
+    const nxt = order[i];
+    if (T.paymentMode === 'on_completion' && (nxt === 'terms_deposit' || nxt === 'terms_stages')) continue;
+    if (T.paymentMode === 'deposit_balance' && nxt === 'terms_stages') continue;
+    return termsAsk(s, to, nxt);
+  }
+  return finishTerms(s, to);
+}
+
+async function termsButton(s, to, id) {
+  const T = s.termsDraft; const a = s.awaiting;
+  if (!T) return null;
+  if (id === 'terms:keep' && a === 'terms_confirm') return finishTerms(s, to);
+  if (id === 'terms:change' && a === 'terms_confirm') { s.termsChanging = true; return termsAsk(s, to, 'terms_state'); }
+  if ((id === 'tskip' || id === 'tkeep') && a === 'terms_state') return termsAfter(s, to, a);
+  if (id === 'tkeep' && ['terms_stages', 'terms_time', 'terms_valid', 'terms_wood'].includes(a)) return termsAfter(s, to, a);
+  if (id.startsWith('tmode:') && a === 'terms_mode') {
+    T.paymentMode = id === 'tmode:poc' ? 'on_completion' : id === 'tmode:db' ? 'deposit_balance' : 'standard';
+    return termsAfter(s, to, a);
+  }
+  return null;
+}
+
+async function termsText(s, to, text) {
+  const T = s.termsDraft; const a = s.awaiting; const t = text.trim(); const low = t.toLowerCase();
+  if (!T) return null;
+  if (a === 'terms_confirm') {
+    if (/^(keep|yes|ok|okay|si|sí|good|dejarlos|bien)/.test(low)) return finishTerms(s, to);
+    if (/^(change|edit|no|cambiar)/.test(low)) { s.termsChanging = true; return termsAsk(s, to, 'terms_state'); }
+    return termsSummary(s, to);
+  }
+  if (a === 'terms_state') {
+    if (SKIP_RE.test(low)) return termsAfter(s, to, a);
+    const st = parseState(t);
+    if (!st) return sendText(to, tx(s, 'needState'));
+    T.state = st;
+    return termsAfter(s, to, a);
+  }
+  if (a === 'terms_deposit') {
+    const pct = /%/.test(t); const n = toNum(t.replace('%', ''));
+    if (n == null || n < 0 || (pct && n > 100)) return sendText(to, tx(s, 'badNumber'));
+    T.depositPct = pct ? n : null; T.deposit = pct ? 1000 : n;
+    return termsAfter(s, to, a);
+  }
+  if (a === 'terms_stages') {
+    const nums = (t.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+    if (nums.length < 2 || nums.length > 5) return sendText(to, tx(s, 'badStagesCount'));
+    const sum = Math.round(nums.reduce((x, y) => x + y, 0) * 100) / 100;
+    if (Math.abs(sum - 100) > 0.01) return sendText(to, tx(s, 'badStages', sum));
+    T.stages = STAGE_LABELS[nums.length].map((l, i) => [l, nums[i]]);
+    return termsAfter(s, to, a);
+  }
+  if (a === 'terms_time' || a === 'terms_valid' || a === 'terms_wood') {
+    const n = toNum(t.replace('%', ''));
+    const max = a === 'terms_wood' ? 100 : 365; const min = a === 'terms_wood' ? 0 : 1;
+    if (n == null || n < min || n > max) return sendText(to, tx(s, 'badNumber'));
+    if (a === 'terms_time') T.timelineDays = n; else if (a === 'terms_valid') T.validityDays = n; else T.woodPct = n;
+    return termsAfter(s, to, a);
+  }
+  return sendText(to, tx(s, 'nudge'));
+}
+
+async function finishTerms(s, to) {
+  const T = s.termsDraft;
+  const terms = { paymentMode: T.paymentMode, deposit: T.deposit, depositPct: T.depositPct, stages: T.stages, timelineDays: T.timelineDays, validityDays: T.validityDays, woodPct: T.woodPct, state: T.state || '' };
+  saveProfile(to, { ...(getProfile(to) || {}), terms });
+  s.profile = getProfile(to);
+  const forced = s.termsForced;
+  s.termsDraft = null; s.termsChanging = false; s.termsForced = false;
+  await sendText(to, tx(s, 'termsSaved'));
+  if (forced) { s.stage = 'collect'; s.awaiting = null; return showConfirm(s, to); }
+  s.stage = s.prevStage && s.prevStage !== 'new' ? s.prevStage : 'collect';
+  s.awaiting = null;
+  if (s.stage === 'collect') return advance(s, to);
+  if (s.stage === 'confirm') return showConfirm(s, to);
+  return null;
+}
+
 // ----- "my quotes": the contractor's remembered reports, newest first -----
 async function showMyQuotes(s, to) {
   const byNo = {};
@@ -1637,7 +1837,7 @@ async function showMyQuotes(s, to) {
 }
 
 // ----- One-time setup: company, usual shingles and warranties, how you get paid, look of the reports -----
-const SETUP_ORDER = ['setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_pay', 'setup_theme', 'setup_brand', 'setup_phone', 'setup_license', 'setup_color', 'setup_logo'];
+const SETUP_ORDER = ['setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_theme', 'setup_brand', 'setup_phone', 'setup_license', 'setup_color', 'setup_logo'];
 
 async function startSetup(s, to) {
   s.prevStage = s.stage === 'setup' ? s.prevStage : s.stage;
@@ -1788,6 +1988,7 @@ function handleIncoming(value, message, host) {
   s.queue = s.queue.then(async () => {
     s = userSessions.get(phone) || s;
     s.host = host;
+    s.profile = getProfile(phone) || s.profile; // always work from the saved profile, never a stale copy
     let watchdog;
     try {
       const guard = new Promise((_, reject) => { watchdog = setTimeout(() => reject(new Error(`A step took longer than ${TASK_LIMIT_MS / 1000}s and was abandoned so the chat could carry on`)), TASK_LIMIT_MS); });
@@ -1809,6 +2010,12 @@ function handleIncoming(value, message, host) {
         if (message.type === 'text' && /^(hola|buenas|buenos|necesito|cotizaci)/i.test(message.text.body.trim())) s.lang = 'es';
         await startEnroll(s, phone, 'rep', true);
         if (message.type === 'image') await onImage(s, phone, message);
+        return;
+      }
+      if (s.stage === 'terms') {
+        if (message.type === 'text') await termsText(s, phone, message.text.body);
+        else if (message.type === 'interactive') await termsButton(s, phone, (message.interactive?.button_reply || {}).id || '');
+        else if (message.type === 'image') await onImage(s, phone, message);
         return;
       }
       if (s.stage === 'enroll') {
@@ -1863,6 +2070,12 @@ const allowCors = (req, res, next) => {
   return next();
 };
 app.options('/accept', allowCors);
+// The customer's own clock and time zone when we have them, otherwise UTC in a format that cannot be misread (month spelled out)
+function fmtWhen(acc) {
+  if (acc.localTime) return `${acc.localTime}${acc.tz ? ` (${acc.tz})` : ''}`;
+  return `${new Date(acc.when).toLocaleString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })} UTC`;
+}
+
 app.post('/accept', allowCors, async (req, res) => {
   const b = req.body || {};
   const token = String(b.token || '');
@@ -1898,7 +2111,7 @@ app.post('/accept', allowCors, async (req, res) => {
   const no = q.no || q.quoteNumber;
   const opt = `${q.accepted.option}${price}`;
   const doc = confirmUrl ? { url: confirmUrl, filename: `Acceptance_${no}.pdf`, caption: tx({ lang }, 'confirmCaption', no, name) } : null;
-  notifyContractor(q.phone, tx({ lang }, 'acceptedMsg', name, no, q.address, opt, new Date().toLocaleString('en-GB')), { lang: q.lang, params: [name, no, q.address, opt] }, doc)
+  notifyContractor(q.phone, tx({ lang }, 'acceptedMsg', name, no, q.address, opt, fmtWhen(q.accepted)), { lang: q.lang, params: [name, no, q.address, opt] }, doc)
     .then((how) => { q.accepted.notified = how; saveQuotes(); })
     .catch((e) => console.error('❌ Could not notify the contractor:', e));
   return res.json({ ok: true, again: false, confirmationUrl: confirmUrl });
