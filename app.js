@@ -41,6 +41,9 @@ const MEDIA_TIMEOUT_MS = Number(process.env.MEDIA_TIMEOUT_MS || 30000);
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 150000);
 const TASK_LIMIT_MS = Number(process.env.TASK_LIMIT_MS || 240000);
 const RETRY_WAIT_MS = Number(process.env.RETRY_WAIT_MS || 1200);
+// What Gemini calls cost, per million tokens (Gemini 3.8 Flash list price). Change them in Render if the rates change.
+const GEMINI_PRICE_IN = Number(process.env.GEMINI_PRICE_IN || 0.75);
+const GEMINI_PRICE_OUT = Number(process.env.GEMINI_PRICE_OUT || 3.75);
 const PHOTO_WAIT_MS = Number(process.env.PHOTO_WAIT_MS || 6000); // wait for the last photo before replying
 
 // Default look: day (unless changed), or dark, blush, or auto (follows the customer's device). The customer can still switch on the page.
@@ -82,10 +85,10 @@ function saveQuotes() {
 // =============================================================================
 const TXT = {
   en: {
-    hello: (n) => `Hi ${n}! 👋 Send me the roof photos whenever you're ready (one wide shot plus a few close-ups of damage), then tell me who the customer is and the property address. Got a roof measurement report? Send the PDF too.`,
+    hello: (n) => `Hi ${n}! 👋 Send me the roof photos whenever you're ready (one wide shot plus close-ups of damage). About 4 or 5 at a time works best, and you can send as many rounds as you need. Then tell me who the customer is and the property address. Got a roof measurement report? Send the PDF too.`,
     photoTip: '📸 Send roof photos when you can: a wide shot plus close-ups of damage.',
     photosFailed: (n) => `${n} photo${n === 1 ? '' : 's'} didn't come through. Please send ${n === 1 ? 'it' : 'them'} again.`,
-    photosUnavailable: (n) => `WhatsApp couldn't deliver ${n} photo${n === 1 ? '' : 's'} to me. If ${n === 1 ? 'it doesn\'t' : 'they don\'t'} show up in a few seconds, please send ${n === 1 ? 'it' : 'them'} again, 2 or 3 at a time.`,
+    photosUnavailable: (n) => `WhatsApp couldn't deliver ${n} photo${n === 1 ? '' : 's'} to me. If ${n === 1 ? 'it doesn\'t' : 'they don\'t'} show up in a few seconds, please send ${n === 1 ? 'it' : 'them'} again, 4 or 5 at a time.`,
     gotPhotos: (n) => `📸 Got ${n} photo${n === 1 ? '' : 's'}.`,
     qAddr: "Who's the customer, and what's the property address?",
     qType: 'Is this a full replacement or a repair?',
@@ -197,10 +200,10 @@ const TXT = {
     btn: { termsKeep: 'Keep these', termsChange: 'Change', tModeStages: 'Deposit + stages', tModePoc: 'Pay on completion', tModeDb: 'Deposit + balance', yesMe: "Yes, that's me", noLogo: 'No logo', serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
-    hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
+    hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y otras de cerca de los daños). Unas 4 o 5 a la vez funciona mejor, y puedes enviar todas las rondas que necesites. Luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
     photoTip: '📸 Envía fotos del techo cuando puedas: una general y otras de cerca de los daños.',
     photosFailed: (n) => `${n} foto${n === 1 ? '' : 's'} no ${n === 1 ? 'llegó' : 'llegaron'}. Envíala${n === 1 ? '' : 's'} de nuevo.`,
-    photosUnavailable: (n) => `WhatsApp no pudo entregarme ${n} foto${n === 1 ? '' : 's'}. Si no ${n === 1 ? 'aparece' : 'aparecen'} en unos segundos, envíala${n === 1 ? '' : 's'} de nuevo, de 2 o 3 en 3.`,
+    photosUnavailable: (n) => `WhatsApp no pudo entregarme ${n} foto${n === 1 ? '' : 's'}. Si no ${n === 1 ? 'aparece' : 'aparecen'} en unos segundos, envíala${n === 1 ? '' : 's'} de nuevo, de 4 o 5 a la vez.`,
     gotPhotos: (n) => `📸 Recibí ${n} foto${n === 1 ? '' : 's'}.`,
     qAddr: '¿Quién es el cliente y cuál es la dirección de la propiedad?',
     qType: '¿Es un reemplazo completo o una reparación?',
@@ -477,7 +480,19 @@ async function downloadWhatsAppImage(mediaId) {
 // =============================================================================
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function callGemini({ system, parts, temperature = 0.1 }) {
+const newMeter = () => ({ calls: 0, inTok: 0, outTok: 0, thinkTok: 0 });
+const meterCost = (m) => (m.inTok * GEMINI_PRICE_IN + (m.outTok + m.thinkTok) * GEMINI_PRICE_OUT) / 1e6;
+// Logs what one Gemini call used, and adds it to the quote's running total
+function recordUsage(data, tag, meter) {
+  const u = data && data.usageMetadata;
+  if (!u) return;
+  const inTok = u.promptTokenCount || 0; const outTok = u.candidatesTokenCount || 0; const thinkTok = u.thoughtsTokenCount || 0;
+  const one = { calls: 1, inTok, outTok, thinkTok };
+  console.log(`🧮 Gemini ${tag || 'call'}: ${inTok.toLocaleString('en-US')} in, ${outTok.toLocaleString('en-US')} out, ${thinkTok.toLocaleString('en-US')} thinking ≈ $${meterCost(one).toFixed(4)}`);
+  if (meter) { meter.calls += 1; meter.inTok += inTok; meter.outTok += outTok; meter.thinkTok += thinkTok; }
+}
+
+async function callGemini({ system, parts, temperature = 0.1, meter, tag }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
   let data = null;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -495,6 +510,7 @@ async function callGemini({ system, parts, temperature = 0.1 }) {
     else break;
   }
   if (data && data.error) console.error('❌ Gemini error:', JSON.stringify(data.error));
+  recordUsage(data, tag, meter);
   return data;
 }
 const parseJsonText = (raw) => JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
@@ -593,7 +609,8 @@ async function extract(s, text) {
   const filled = JSON.parse(JSON.stringify(s.data));
   const data = await callGemini({
     system: EXTRACT_PROMPT,
-    parts: [{ text: JSON.stringify({ awaiting: s.awaiting, already_known: filled, message: text }) }]
+    parts: [{ text: JSON.stringify({ awaiting: s.awaiting, already_known: filled, message: text }) }],
+    meter: s.usage, tag: 'read message'
   });
   const raw = geminiText(data);
   if (!raw) throw new Error('Extraction returned nothing');
@@ -675,7 +692,7 @@ function newSession(name, lang, profile) {
   return {
     contractorName: name, lang: lang || 'en', stage: 'new', // new | collect | confirm | changing | setup | building | done
     profile: profile || null, data: freshData(profile), images: [], skipped: new Set(), tries: {}, awaiting: null, extrasDone: false, photoTipSent: false,
-    report: null, photoTimer: null, quoteNo: null, queue: Promise.resolve()
+    report: null, photoTimer: null, quoteNo: null, usage: newMeter(), queue: Promise.resolve()
   };
 }
 
@@ -872,7 +889,7 @@ async function buildReportData(s) {
     parts.push({ inline_data: { mime_type: 'image/jpeg', data: fs.readFileSync(path.join(publicDir, img.file)).toString('base64') } });
   }
   parts.push({ text: 'Return only the JSON.' });
-  const data = await callGemini({ system: getBuilderPrompt(s), parts, temperature: 0.2 });
+  const data = await callGemini({ system: getBuilderPrompt(s), parts, temperature: 0.2, meter: s.usage, tag: `build report (${s.images.length} photos)` });
   const raw = geminiText(data);
   if (!raw) throw new Error('Report builder returned nothing');
   return parseJsonText(raw);
@@ -1006,8 +1023,9 @@ async function doBuild(s, to, host) {
     const listPrices = (d.options || []).map((o) => o.listPrice).filter((v) => v != null);
     const rItems = (d.repair && d.repair.items) || [];
     const repairSum = d.repair && d.repair.totalPrice != null ? d.repair.totalPrice : (rItems.length && rItems.every((x) => x.price != null) ? rItems.reduce((t, x) => t + x.price, 0) : null);
-    QUOTES[token] = { phone: to, lang: s.lang, quoteNumber: s.quoteNo, no: s.quoteNo, customer: d.meta.homeowner || '', address: d.meta.addressLine1 || '', price: listPrices.length ? Math.min(...listPrices) : repairSum, url, confirm: buildConfirm(d, s), created: Date.now() };
+    QUOTES[token] = { phone: to, lang: s.lang, quoteNumber: s.quoteNo, no: s.quoteNo, customer: d.meta.homeowner || '', address: d.meta.addressLine1 || '', price: listPrices.length ? Math.min(...listPrices) : repairSum, url, usage: { ...s.usage, costUsd: +meterCost(s.usage).toFixed(4) }, confirm: buildConfirm(d, s), created: Date.now() };
     saveQuotes();
+    console.log(`🧮 Quote ${s.quoteNo} so far: ${s.usage.calls} Gemini calls, ${s.usage.inTok.toLocaleString('en-US')} in, ${(s.usage.outTok + s.usage.thinkTok).toLocaleString('en-US')} out ≈ $${meterCost(s.usage).toFixed(4)}`);
     s.stage = 'done'; s.awaiting = null;
     const notes = buildNotes(s, d.flags);
     if (notes.text) {
@@ -1438,7 +1456,7 @@ async function loadPdfTools() {
 }
 
 // Renders the page that holds the roof drawing, asks Gemini where the drawing is, and crops it.
-async function cropDiagram(buffer, pageNum) {
+async function cropDiagram(buffer, pageNum, meter) {
   const tools = await loadPdfTools();
   if (!tools) return null;
   const doc = await tools.pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true, verbosity: 0 }).promise;
@@ -1450,7 +1468,7 @@ async function cropDiagram(buffer, pageNum) {
   const data = await callGemini({
     system: BOX_PROMPT,
     parts: [{ inline_data: { mime_type: 'image/jpeg', data: canvas.toBuffer('image/jpeg', 70).toString('base64') } }, { text: 'Return the box.' }],
-    temperature: 0
+    temperature: 0, meter, tag: 'find diagram'
   });
   const raw = geminiText(data);
   const box = raw ? parseJsonText(raw).box : null;
@@ -1465,11 +1483,11 @@ async function cropDiagram(buffer, pageNum) {
   return out.toBuffer('image/jpeg', 85);
 }
 
-async function readMeasurementReport(buffer, mime) {
+async function readMeasurementReport(buffer, mime, meter) {
   const data = await callGemini({
     system: MEASURE_PROMPT,
     parts: [{ inline_data: { mime_type: mime, data: buffer.toString('base64') } }, { text: 'Read this report and return the JSON.' }],
-    temperature: 0
+    temperature: 0, meter, tag: 'read measurement report'
   });
   const raw = geminiText(data);
   if (!raw) throw new Error('Measurement reader returned nothing');
@@ -1487,7 +1505,7 @@ async function readMeasurementReport(buffer, mime) {
   let diagramFile = null;
   if (mime === 'application/pdf' && j.diagram_page) {
     try {
-      const jpg = await cropDiagram(buffer, Number(j.diagram_page));
+      const jpg = await cropDiagram(buffer, Number(j.diagram_page), meter);
       if (jpg) { diagramFile = `diagram_${crypto.randomBytes(6).toString('hex')}.jpg`; fs.writeFileSync(path.join(publicDir, diagramFile), jpg); }
     } catch (e) { console.error('ℹ️ Diagram skipped:', e.message); }
   }
@@ -1500,7 +1518,7 @@ async function onMeasurement(s, to, file) {
   try {
     const media = await fetchMedia(file.id);
     if (media.buffer.length > 15 * 1024 * 1024) throw new Error('File too large');
-    r = await readMeasurementReport(media.buffer, file.mime || media.mime);
+    r = await readMeasurementReport(media.buffer, file.mime || media.mime, s.usage);
   } catch (err) {
     console.error('❌ Measurement report error:', err);
     return sendText(to, tx(s, 'measureFail'));
