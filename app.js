@@ -35,6 +35,12 @@ const AUTO_ENROLL = process.env.AUTO_ENROLL_COMPANY || '';
 const TIER_STEP_PCT = Number(process.env.TIER_STEP_PCT || 10);
 // The setup offer waits a few seconds so it lands AFTER the report file (WhatsApp delivers attachments a little later than text).
 const OFFER_DELAY_MS = Number(process.env.OFFER_DELAY_MS || 8000);
+// No request may hang forever: a stuck call would freeze everything behind it in that contractor's chat.
+const HTTP_TIMEOUT_MS = Number(process.env.HTTP_TIMEOUT_MS || 20000);
+const MEDIA_TIMEOUT_MS = Number(process.env.MEDIA_TIMEOUT_MS || 30000);
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 150000);
+const TASK_LIMIT_MS = Number(process.env.TASK_LIMIT_MS || 240000);
+const RETRY_WAIT_MS = Number(process.env.RETRY_WAIT_MS || 1200);
 const PHOTO_WAIT_MS = Number(process.env.PHOTO_WAIT_MS || 6000); // wait for the last photo before replying
 
 // Default look: day (unless changed), or dark, blush, or auto (follows the customer's device). The customer can still switch on the page.
@@ -78,6 +84,8 @@ const TXT = {
   en: {
     hello: (n) => `Hi ${n}! 👋 Send me the roof photos whenever you're ready (one wide shot plus a few close-ups of damage), then tell me who the customer is and the property address. Got a roof measurement report? Send the PDF too.`,
     photoTip: '📸 Send roof photos when you can: a wide shot plus close-ups of damage.',
+    photosFailed: (n) => `${n} photo${n === 1 ? '' : 's'} didn't come through. Please send ${n === 1 ? 'it' : 'them'} again.`,
+    photosUnavailable: (n) => `WhatsApp couldn't deliver ${n} photo${n === 1 ? '' : 's'} to me. If ${n === 1 ? 'it doesn\'t' : 'they don\'t'} show up in a few seconds, please send ${n === 1 ? 'it' : 'them'} again, 2 or 3 at a time.`,
     gotPhotos: (n) => `📸 Got ${n} photo${n === 1 ? '' : 's'}.`,
     qAddr: "Who's the customer, and what's the property address?",
     qType: 'Is this a full replacement or a repair?',
@@ -165,6 +173,8 @@ const TXT = {
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
     photoTip: '📸 Envía fotos del techo cuando puedas: una general y otras de cerca de los daños.',
+    photosFailed: (n) => `${n} foto${n === 1 ? '' : 's'} no ${n === 1 ? 'llegó' : 'llegaron'}. Envíala${n === 1 ? '' : 's'} de nuevo.`,
+    photosUnavailable: (n) => `WhatsApp no pudo entregarme ${n} foto${n === 1 ? '' : 's'}. Si no ${n === 1 ? 'aparece' : 'aparecen'} en unos segundos, envíala${n === 1 ? '' : 's'} de nuevo, de 2 o 3 en 3.`,
     gotPhotos: (n) => `📸 Recibí ${n} foto${n === 1 ? '' : 's'}.`,
     qAddr: '¿Quién es el cliente y cuál es la dirección de la propiedad?',
     qType: '¿Es un reemplazo completo o una reparación?',
@@ -260,11 +270,25 @@ const firstName = (n) => String(n || 'there').split(' ')[0];
 // =============================================================================
 // 2. WHATSAPP SENDING (text and tap buttons)
 // =============================================================================
+function timedFetch(url, opts = {}, ms = HTTP_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  let t1; let t2;
+  const limit = new Promise((_, reject) => { t2 = setTimeout(() => reject(new Error(`Request timed out after ${ms} ms`)), ms + 100); });
+  t1 = setTimeout(() => ctrl.abort(), ms);
+  return Promise.race([fetch(url, { ...opts, signal: ctrl.signal }), limit]).finally(() => { clearTimeout(t1); clearTimeout(t2); });
+}
+async function withRetry(fn, tries = 3) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { return await fn(); } catch (e) { last = e; if (i < tries - 1) await new Promise((r) => setTimeout(r, RETRY_WAIT_MS * (i + 1))); }
+  }
+  throw last;
+}
 const GRAPH = () => `https://graph.facebook.com/v26.0/${waPhoneId}/messages`;
 
 async function waPost(body, label) {
   try {
-    const res = await fetch(GRAPH(), {
+    const res = await timedFetch(GRAPH(), {
       method: 'POST',
       headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', ...body })
@@ -371,16 +395,23 @@ const sendDocument = (to, fileUrl, fileName, caption) =>
 
 async function downloadWhatsAppImage(mediaId) {
   try {
-    const res = await fetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } });
-    const data = await res.json();
-    if (!data.url) throw new Error('No media URL returned by Meta');
-    const imgRes = await fetch(data.url, { headers: { Authorization: `Bearer ${waToken}` } });
-    const buffer = await imgRes.arrayBuffer();
+    // Meta's media link is sometimes not ready the first time, so this is retried. A real image is required:
+    // an error page saved as a "photo" would be counted and then break the report.
+    const buffer = await withRetry(async () => {
+      const res = await timedFetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } }, MEDIA_TIMEOUT_MS);
+      const data = await res.json();
+      if (!data.url) throw new Error(`No media URL returned by Meta ${JSON.stringify(data.error || '')}`);
+      const imgRes = await timedFetch(data.url, { headers: { Authorization: `Bearer ${waToken}` } }, MEDIA_TIMEOUT_MS);
+      if (!imgRes.ok) throw new Error(`Media download failed (${imgRes.status})`);
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      if (buf.length < 500) throw new Error(`Media download too small (${buf.length} bytes)`);
+      return buf;
+    });
     const fileName = `img_${mediaId}.jpg`;
-    fs.writeFileSync(path.join(publicDir, fileName), Buffer.from(buffer));
+    fs.writeFileSync(path.join(publicDir, fileName), buffer);
     return fileName;
   } catch (err) {
-    console.error('❌ Media download error:', err);
+    console.error('❌ Media download error:', err.message);
     return null;
   }
 }
@@ -394,7 +425,7 @@ async function callGemini({ system, parts, temperature = 0.1 }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
   let data = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(url, {
+    const res = await timedFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -402,7 +433,7 @@ async function callGemini({ system, parts, temperature = 0.1 }) {
         contents: [{ role: 'user', parts }],
         generationConfig: { response_mime_type: 'application/json', temperature }
       })
-    });
+    }, GEMINI_TIMEOUT_MS);
     data = await res.json();
     if (data.error && data.error.code === 503) await sleep(2000);
     else break;
@@ -1255,11 +1286,17 @@ async function onImage(s, to, message) {
   }
   if (/measure|medici[oó]n|eagleview|quickmeasure|hover|roofr/i.test(message.image.caption || '')) return onMeasurement(s, to, { id: message.image.id, mime: 'image/jpeg' });
   const file = await downloadWhatsAppImage(message.image.id);
-  if (!file) return sendText(to, tx(s, 'hiccup'));
+  if (!file) { s.batchFailed = (s.batchFailed || 0) + 1; return null; } // reported once, with the rest of the batch
   s.images.push({ id: String(s.images.length + 1), file, caption: message.image.caption || '' });
+  s.batchOk = (s.batchOk || 0) + 1;
   if (s.stage === 'new') s.stage = 'collect';
+  return null;
+}
+
+// One reply for a whole batch of photos, a few seconds after the LAST one has been handled
+// (slow or failed downloads take a while, so the timer only starts once nothing is waiting in the queue).
+function schedulePhotoAck(s, to) {
   if (s.photoTimer) clearTimeout(s.photoTimer);
-  // One reply for a whole batch of photos, sent a few seconds after the last one
   s.photoTimer = setTimeout(() => {
     s.photoTimer = null;
     s.queue = s.queue.then(() => photosSettled(s, to)).catch((e) => console.error('❌ photo reply error:', e));
@@ -1267,9 +1304,18 @@ async function onImage(s, to, message) {
 }
 
 async function photosSettled(s, to) {
-  if (s.stage === 'building' || s.stage === 'enroll') return;
-  const ack = tx(s, 'gotPhotos', s.images.length);
-  if (s.stage === 'done') { s.report = null; return doBuild(s, to, s.host); } // new photos: rewrite the findings
+  const ok = s.batchOk || 0; const failed = s.batchFailed || 0; const unavailable = s.batchUnavailable || 0;
+  s.batchOk = 0; s.batchFailed = 0; s.batchUnavailable = 0;
+  if (s.stage === 'building' || s.stage === 'enroll' || (!ok && !failed && !unavailable)) return null;
+  const problems = [failed ? tx(s, 'photosFailed', failed) : '', unavailable ? tx(s, 'photosUnavailable', unavailable) : ''].filter(Boolean).join(' ');
+  const got = ok || s.images.length ? tx(s, 'gotPhotos', s.images.length) : '';
+  const ack = [got, problems].filter(Boolean).join(' ');
+  if (!ok) return sendText(to, problems); // nothing new arrived: only say what is missing
+  if (s.stage === 'done') {
+    if (problems) await sendText(to, problems);
+    s.report = null;
+    return doBuild(s, to, s.host); // new photos: rewrite the findings
+  }
   if (s.awaiting && s.awaiting !== 'photo' && s.awaiting !== 'confirm') return sendText(to, ack);
   if (s.awaiting === 'confirm') return sendText(to, ack);
   await sendText(to, ack);
@@ -1602,11 +1648,14 @@ async function finishSetup(s, to) {
 
 // ----- Downloading files the contractor sends (PDF measurement reports) -----
 async function fetchMedia(mediaId) {
-  const res = await fetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } });
-  const data = await res.json();
-  if (!data.url) throw new Error('No media URL returned by Meta');
-  const r = await fetch(data.url, { headers: { Authorization: `Bearer ${waToken}` } });
-  return { buffer: Buffer.from(await r.arrayBuffer()), mime: data.mime_type || 'audio/ogg' };
+  return withRetry(async () => {
+    const res = await timedFetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } }, MEDIA_TIMEOUT_MS);
+    const data = await res.json();
+    if (!data.url) throw new Error('No media URL returned by Meta');
+    const r = await timedFetch(data.url, { headers: { Authorization: `Bearer ${waToken}` } }, MEDIA_TIMEOUT_MS);
+    if (!r.ok) throw new Error(`Media download failed (${r.status})`);
+    return { buffer: Buffer.from(await r.arrayBuffer()), mime: data.mime_type || 'application/pdf' };
+  });
 }
 
 // =============================================================================
@@ -1629,12 +1678,21 @@ app.post('/', async (req, res) => {
   for (const entry of req.body.entry || []) for (const change of entry.changes || []) if (change.value) values.push(change.value);
   if (req.body.value) values.push(req.body.value);
   const host = req.get('host');
+  const counts = {};
+  for (const value of values) for (const message of value.messages || []) counts[message.type] = (counts[message.type] || 0) + 1;
+  const summary = Object.entries(counts).map(([k, n]) => `${k}×${n}`).join(', ');
+  if (summary) console.log(`📥 WhatsApp delivered: ${summary}`);
   for (const value of values) for (const message of value.messages || []) handleIncoming(value, message, host);
 });
+
+// WhatsApp sometimes tells us a photo exists but cannot hand over its content (error 131060, "message is unavailable").
+const isLostPhoto = (m) => m.type === 'unsupported' && ((m.errors || []).some((e) => e.code === 131060) || (m.unsupported && m.unsupported.type === 'image'));
 
 function handleIncoming(value, message, host) {
   const phone = message.from;
   touchWindow(phone);
+  const waitingSession = getSession(phone, (value.contacts || [])[0]?.profile?.name || 'Contractor');
+  if (message.type === 'image' || isLostPhoto(message)) waitingSession.pendingImages = (waitingSession.pendingImages || 0) + 1;
   const contact = (value.contacts || []).find((c) => c.wa_id === phone) || (value.contacts || [])[0];
   const name = contact?.profile?.name || 'Contractor';
   let s = getSession(phone, name);
@@ -1644,7 +1702,10 @@ function handleIncoming(value, message, host) {
   s.queue = s.queue.then(async () => {
     s = userSessions.get(phone) || s;
     s.host = host;
+    let watchdog;
     try {
+      const guard = new Promise((_, reject) => { watchdog = setTimeout(() => reject(new Error(`A step took longer than ${TASK_LIMIT_MS / 1000}s and was abandoned so the chat could carry on`)), TASK_LIMIT_MS); });
+      await Promise.race([guard, (async () => {
       const waiting = takePending(phone);
       if (waiting.length) {
         const lines = waiting.map((p) => p.text || (p.doc ? `📄 ${p.doc.caption}` : '')).filter(Boolean);
@@ -1682,13 +1743,23 @@ function handleIncoming(value, message, host) {
         // Voice notes are not supported. Say so once, and never again in this chat.
         console.log(`ℹ️ Voice note from ${name} (not supported)`);
         if (!s.audioNoted) { s.audioNoted = true; await sendText(phone, tx(s, 'onlyThese')); }
+      } else if (isLostPhoto(message)) {
+        console.log(`ℹ️ WhatsApp could not deliver a photo from ${name} (unavailable):`, JSON.stringify({ unsupported: message.unsupported || null, errors: message.errors || null }));
+        s.batchUnavailable = (s.batchUnavailable || 0) + 1;
       } else {
-        // Reactions, stickers, album wrappers and other system messages: ignore quietly, but log what they were.
+        // Reactions, stickers and other system messages: ignore quietly, but log what they were.
         console.log(`ℹ️ Ignored message type "${message.type}"`, message.errors ? JSON.stringify(message.errors) : '');
       }
+      })()]);
     } catch (err) {
-      console.error('❌ Processing error:', err);
+      console.error('❌ Processing error:', err.message || err);
       await sendText(phone, tx(s, 'hiccup'));
+    } finally {
+      clearTimeout(watchdog);
+      if (message.type === 'image' || isLostPhoto(message)) {
+        waitingSession.pendingImages = Math.max(0, (waitingSession.pendingImages || 1) - 1);
+        if (waitingSession.pendingImages === 0) schedulePhotoAck(userSessions.get(phone) || s, phone);
+      }
     }
   }).catch((e) => console.error('❌ Queue error:', e));
 }
