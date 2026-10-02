@@ -394,7 +394,7 @@ const ALIAS={woman:'blush',rose:'blush',light:'day'};
 function curTheme(){return document.documentElement.getAttribute('data-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches?'dark':'day')}
 function applyTheme(d){
  let t=null;try{t=localStorage.getItem('reportTheme')}catch(e){}
- t=ALIAS[t]||t;if(!THEMES.some(x=>x[0]==t)){t=d.meta&&d.meta.theme;t=ALIAS[t]||t}
+ t=ALIAS[t]||t;if(!THEMES.some(x=>x[0]==t)){t=d.meta&&d.meta.theme;if(t==null||t==='')t='day';t=ALIAS[t]||t}
  const root=document.documentElement;
  if(THEMES.some(x=>x[0]==t))root.setAttribute('data-theme',t);else root.removeAttribute('data-theme')}
 function mountBar(d){

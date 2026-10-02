@@ -35,8 +35,8 @@ const REP_NAME = process.env.REP_NAME || '';
 const TIER_STEP_PCT = Number(process.env.TIER_STEP_PCT || 10);
 const PHOTO_WAIT_MS = Number(process.env.PHOTO_WAIT_MS || 6000); // wait for the last photo before replying
 
-// Default look: auto (customer's device), day, dark or blush. The customer can still switch on the page.
-const REPORT_THEME = process.env.REPORT_THEME || 'auto';
+// Default look: day (unless changed), or dark, blush, or auto (follows the customer's device). The customer can still switch on the page.
+const REPORT_THEME = process.env.REPORT_THEME || 'day';
 const THEMES = ['auto', 'day', 'dark', 'blush'];
 const THEME_ALIAS = { woman: 'blush', rose: 'blush', pink: 'blush', light: 'day' };
 const themeOf = (v) => {
@@ -143,7 +143,7 @@ const TXT = {
     sLicense: "What's your license number?",
     sColor: 'Brand color? Tap one, or type a code like #1A5FB4.',
     sLogo: 'Send your logo as an image.',
-    btn: { serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeAuto: 'Auto', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    btn: { serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
@@ -218,7 +218,7 @@ const TXT = {
     sLicense: '¿Cuál es tu número de licencia?',
     sColor: '¿Color de tu marca? Toca uno, o escribe un código como #1A5FB4.',
     sLogo: 'Envía tu logo como imagen.',
-    btn: { serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeAuto: 'Auto', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    btn: { serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -663,7 +663,7 @@ function applyIntake(d, s) {
   d.meta.rep = P.rep || REP_NAME;
   d.meta.date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   d.meta.dateLabel = d.meta.dateLabel || 'Report date';
-  d.meta.theme = themeOf(D.report_theme) || themeOf(REPORT_THEME) || 'auto';
+  d.meta.theme = themeOf(D.report_theme) || themeOf(REPORT_THEME) || 'day';
   d.meta.jobType = isRepair(s) ? 'repair' : 'replacement';
   d.meta.product = isRepair(s) ? 'Roof repair' : 'Shingle roof replacement';
   d.meta.areaSqFt = D.roof_area_sqft || '';
@@ -1147,7 +1147,7 @@ function askSetup(s, to) {
     case 'setup_license': return sendButtons(to, tx(s, 'sLicense'), [skip]);
     case 'setup_color': return sendButtons(to, tx(s, 'sColor'), [{ id: 'color:#1a5fb4', title: btn(s, 'blue') }, { id: 'color:#2b7a4b', title: btn(s, 'green') }, skip]);
     case 'setup_logo': return sendButtons(to, tx(s, 'sLogo'), [skip]);
-    default: return sendButtons(to, tx(s, 'sTheme'), [{ id: 'theme:auto', title: btn(s, 'themeAuto') }, { id: 'theme:dark', title: btn(s, 'themeDark') }, { id: 'theme:blush', title: btn(s, 'themeBlush') }]);
+    default: return sendButtons(to, tx(s, 'sTheme'), [{ id: 'theme:day', title: btn(s, 'themeDay') }, { id: 'theme:dark', title: btn(s, 'themeDark') }, { id: 'theme:blush', title: btn(s, 'themeBlush') }]);
   }
 }
 
