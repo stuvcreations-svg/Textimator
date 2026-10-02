@@ -93,6 +93,12 @@ const TXT = {
     building: 'On it, building your report… ⏳',
     ready: (url) => `✅ Your report is ready:\n${url}`,
     notes: 'Notes for you (not in the report):',
+    notesHead: 'Before you send this report:',
+    notesPhotos: '📸 Photos not used',
+    notesCheck: '⚠️ Please check',
+    notesBlank: '📝 Left blank (the report says "to be confirmed")',
+    notesMore: (n) => `…and ${n} more`,
+    photoWord: 'Photo',
     hiccup: 'Sorry, I hit a snag. Please try that again.',
     onlyThese: 'I can read typed messages, photos and PDF reports.',
     editHint: 'Tell me what to change, or tap New quote.',
@@ -162,6 +168,12 @@ const TXT = {
     building: 'Listo, preparando tu informe… ⏳',
     ready: (url) => `✅ Tu informe está listo:\n${url}`,
     notes: 'Notas para ti (no salen en el informe):',
+    notesHead: 'Antes de enviar este informe:',
+    notesPhotos: '📸 Fotos que no se usaron',
+    notesCheck: '⚠️ Por favor revisa',
+    notesBlank: '📝 Quedó en blanco (el informe dirá "por confirmar")',
+    notesMore: (n) => `…y ${n} más`,
+    photoWord: 'Foto',
     hiccup: 'Perdón, tuve un problema. Inténtalo de nuevo.',
     onlyThese: 'Puedo leer mensajes escritos, fotos e informes en PDF.',
     editHint: 'Dime qué cambiar, o toca Nueva cotización.',
@@ -542,6 +554,29 @@ function summary(s) {
   return lines.join('\n');
 }
 
+// Turns the model's raw flags and the app's own blanks into ONE short message, grouped by what the contractor must do.
+// The app lists blanks itself, once, so the model's own "MISSING" / "DRAFT" lines are dropped.
+function buildNotes(s, flags) {
+  const excluded = []; const check = [];
+  for (const raw of flags || []) {
+    const m = String(raw).match(/^([A-Za-z ]+):\s*([\s\S]*)$/);
+    const kind = m ? m[1].trim().toUpperCase() : 'CHECK';
+    const text = (m ? m[2] : String(raw)).trim();
+    if (kind === 'MISSING' || kind === 'DRAFT' || kind === 'NOTE') continue;
+    if (kind === 'EXCLUDED') {
+      const e = text.match(/^(\S+)\s*([\s\S]*)$/);
+      excluded.push({ id: e ? e[1] : '?', why: ((e && e[2]) || '').replace(/\s+/g, ' ').slice(0, 150) });
+    } else check.push(text.replace(/\s+/g, ' ').slice(0, 220));
+  }
+  const cap = (arr, fn) => { const shown = arr.slice(0, 3).map(fn); if (arr.length > 3) shown.push(`• ${tx(s, 'notesMore', arr.length - 3)}`); return shown.join('\n'); };
+  const blank = blanks(s);
+  const parts = [];
+  if (excluded.length) parts.push(`${tx(s, 'notesPhotos')}\n${cap(excluded, (x) => `• ${tx(s, 'photoWord')} ${x.id}${x.why ? `: ${x.why}` : ''}`)}`);
+  if (check.length) parts.push(`${tx(s, 'notesCheck')}\n${cap(check, (x) => `• ${x}`)}`);
+  if (blank.length) parts.push(`${tx(s, 'notesBlank')}\n${blank.join(' · ')}`);
+  return { text: parts.length ? `${tx(s, 'notesHead')}\n\n${parts.join('\n\n')}` : '', hasBlanks: blank.length > 0 };
+}
+
 // Sends the next question (or the summary). Everything the contractor already told us is skipped.
 async function advance(s, to) {
   const q = nextQuestion(s);
@@ -585,12 +620,13 @@ async function showConfirm(s, to) {
 // =============================================================================
 // 6. BUILDING THE REPORT
 // =============================================================================
-function getBuilderPrompt() {
+function getBuilderPrompt(s) {
   const md = fs.readFileSync(PROMPT_PATH, 'utf8');
   return (
     'The input below is a structured intake summary from the contractor (JSON), plus the roof photos. ' +
     'Treat it as the conversation described in the rules. The app sets prices, options, discount, payment terms and job type itself from the intake, ' +
     'so your job is the wording: names, address, condition, findings, themes, priorities, captions and the cover photo.\n\n' +
+    `Write every entry in \`flags\` in ${s && s.lang === 'es' ? 'Spanish' : 'English'}.\n\n` +
     md.split('## PROMPT')[1].trim()
   );
 }
@@ -611,7 +647,7 @@ async function buildReportData(s) {
     parts.push({ inline_data: { mime_type: 'image/jpeg', data: fs.readFileSync(path.join(publicDir, img.file)).toString('base64') } });
   }
   parts.push({ text: 'Return only the JSON.' });
-  const data = await callGemini({ system: getBuilderPrompt(), parts, temperature: 0.2 });
+  const data = await callGemini({ system: getBuilderPrompt(s), parts, temperature: 0.2 });
   const raw = geminiText(data);
   if (!raw) throw new Error('Report builder returned nothing');
   return parseJsonText(raw);
@@ -730,9 +766,13 @@ async function doBuild(s, to, host) {
     fs.writeFileSync(path.join(publicDir, fileName), renderQuoteHtml(d), 'utf8');
     const url = `https://${host}/files/${fileName}`;
     s.stage = 'done'; s.awaiting = null;
+    const notes = buildNotes(s, d.flags);
+    if (notes.text) {
+      if (notes.hasBlanks) await sendButtons(to, notes.text, [{ id: 'add', title: btn(s, 'add') }]);
+      else await sendText(to, notes.text);
+    }
     await sendButtons(to, tx(s, 'ready', url), [{ id: 'change', title: btn(s, 'edit') }, { id: 'newquote', title: btn(s, 'newq') }]);
     await sendDocument(to, url, fileName, `Estimate Proposal ${s.quoteNumber}`);
-    if (d.flags.length) await sendText(to, `${tx(s, 'notes')}\n- ${d.flags.join('\n- ')}`);
     const pr = getProfile(to);
     if (!pr || !pr.offered) {
       saveProfile(to, { ...(pr || {}), offered: true });
