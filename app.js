@@ -152,7 +152,11 @@ const TXT = {
     enrollWelcome: "Welcome! 👋 I'm Textimator. First, a one-minute setup so every report carries your company name and logo.",
     needCompany: 'I need your company name to put on your reports. What is it?',
     qLogo: (name) => `Nice to meet you, ${name}! Now send your logo as an image. No logo? Tap below and I'll make a clean header from your name.`,
-    enrollDone: (name, logo) => `✅ Done! ${name}${logo ? ' and your logo' : ''} will appear on every report you create. Type "my quotes" any time to see your past reports.`,
+    enrollDone: (name, logo, rep) => `✅ Done, ${firstName(rep)}! ${name}${logo ? ' and your logo' : ''} will appear on every report you create. Type "my quotes" any time to see your past reports.`,
+    qRep: 'What name should appear on your reports as the person who prepared them?',
+    qRepSuggest: (n) => `Should I put "${n}" on your reports as the person who prepared them? Tap Yes, or type a different name.`,
+    needRep: 'I need a name to put on your reports. What should it be?',
+    repDone: (rep) => `✅ Thanks, ${rep}! Your name will appear on your reports as the person who prepared them.`,
     myQuotesHead: 'Your latest reports:',
     myQuotesNone: "You haven't created any reports yet.",
     qAccepted: '✅ accepted', qSent: '⏳ waiting',
@@ -168,7 +172,7 @@ const TXT = {
     sLicense: "What's your license number?",
     sColor: 'Brand color? Tap one, or type a code like #1A5FB4.',
     sLogo: 'Send your logo as an image.',
-    btn: { noLogo: 'No logo', serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    btn: { yesMe: "Yes, that's me", noLogo: 'No logo', serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
@@ -241,7 +245,11 @@ const TXT = {
     enrollWelcome: '¡Bienvenido! 👋 Soy Textimator. Primero, una configuración de un minuto para que cada informe lleve el nombre y el logo de tu empresa.',
     needCompany: 'Necesito el nombre de tu empresa para ponerlo en tus informes. ¿Cómo se llama?',
     qLogo: (name) => `¡Mucho gusto, ${name}! Ahora envía tu logo como imagen. ¿No tienes logo? Toca abajo y haré un encabezado limpio con tu nombre.`,
-    enrollDone: (name, logo) => `✅ ¡Listo! ${name}${logo ? ' y tu logo' : ''} aparecerán en cada informe que crees. Escribe "mis cotizaciones" cuando quieras ver tus informes anteriores.`,
+    enrollDone: (name, logo, rep) => `✅ ¡Listo, ${firstName(rep)}! ${name}${logo ? ' y tu logo' : ''} aparecerán en cada informe que crees. Escribe "mis cotizaciones" cuando quieras ver tus informes anteriores.`,
+    qRep: '¿Qué nombre debe aparecer en tus informes como la persona que los preparó?',
+    qRepSuggest: (n) => `¿Pongo "${n}" en tus informes como la persona que los preparó? Toca Sí, o escribe otro nombre.`,
+    needRep: 'Necesito un nombre para ponerlo en tus informes. ¿Cuál es?',
+    repDone: (rep) => `✅ ¡Gracias, ${rep}! Tu nombre aparecerá en tus informes como la persona que los preparó.`,
     myQuotesHead: 'Tus últimos informes:',
     myQuotesNone: 'Todavía no has creado informes.',
     qAccepted: '✅ aceptado', qSent: '⏳ en espera',
@@ -257,7 +265,7 @@ const TXT = {
     sLicense: '¿Cuál es tu número de licencia?',
     sColor: '¿Color de tu marca? Toca uno, o escribe un código como #1A5FB4.',
     sLogo: 'Envía tu logo como imagen.',
-    btn: { noLogo: 'Sin logo', serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    btn: { yesMe: 'Sí, soy yo', noLogo: 'Sin logo', serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -266,6 +274,10 @@ const tx = (s, key, ...args) => {
 };
 const btn = (s, key) => (TXT[s.lang] || TXT.en).btn[key];
 const firstName = (n) => String(n || 'there').split(' ')[0];
+// A usable human name: at least two letters (so an emoji or a number is not a name)
+const validName = (n) => { const t = String(n || '').trim(); return t.length >= 2 && t.length <= 60 && (t.match(/\p{L}/gu) || []).length >= 2 && !/^contractor$/i.test(t); };
+// Greet by the name the contractor gave us; fall back to their WhatsApp name only if it looks like a name
+const greetName = (s) => (s.profile && s.profile.rep) || (validName(s.contractorName) ? s.contractorName : '');
 
 // =============================================================================
 // 2. WHATSAPP SENDING (text and tap buttons)
@@ -992,7 +1004,7 @@ function buildConfirm(d, s) {
   return {
     company: d.meta.company, phone: b.phone || '', license: b.license || '', color: b.color || '', logoFile: (s.profile || {}).logoFile || '',
     homeowner: d.meta.homeowner, address: [d.meta.addressLine1, d.meta.addressLine2].filter(Boolean).join(', '), reportNo: d.meta.reportNo, reportDate: d.meta.date,
-    jobType: d.meta.jobType, options, discount: D ? { pct: D.pct, name: D.name } : null, terms: d.terms, scope: scopeBullets(d)
+    rep: d.meta.rep || '', jobType: d.meta.jobType, options, discount: D ? { pct: D.pct, name: D.name } : null, terms: d.terms, scope: scopeBullets(d)
   };
 }
 
@@ -1059,7 +1071,7 @@ function writeConfirmationPdf(file, c, acc, reportUrl, token, chosen) {
       section('Accepted');
       kv('Accepted by', acc.name, true);
       kv('Accepted on', when);
-      kv('Contractor', c.company);
+      kv('Contractor', c.rep ? `${c.company} (${c.rep})` : c.company);
 
       section('What was accepted');
       const o = chosen || {};
@@ -1171,6 +1183,7 @@ const BUILD_RE = /^(generate|build|done|send it|create|genera|generar|listo|crea
 const NEW_RE = /^(new quote|new|start over|reset|nueva cotizaci[oó]n|nueva|empezar de nuevo)\.?$/i;
 const MYQ_RE = /^(my quotes|quotes|history|my reports|mis cotizaciones|historial|mis informes)$/i;
 const ENROLL_RE = /^(company|logo|my company|company name|empresa|mi empresa)$/i;
+const NAME_RE = /^(my name|name|mi nombre|nombre)$/i;
 const SETUP_RE = /^(setup|set up|settings|profile|my settings|configurar|ajustes|perfil)$/i;
 const GREET_RE = /^(hi|hello|hey|hola|start|empezar|buenas|buenos d[ií]as)\b[\s!.,]*$/i;
 
@@ -1179,7 +1192,7 @@ async function startOver(s, to, phone) {
   fresh.stage = 'collect';
   fresh.queue = s.queue;
   userSessions.set(phone, fresh);
-  await sendText(to, tx(fresh, 'hello', firstName(fresh.contractorName)));
+  await sendText(to, tx(fresh, 'hello', firstName(greetName(fresh))));
 }
 
 async function skipCurrent(s, to) {
@@ -1221,12 +1234,13 @@ async function onText(s, to, text, host, phone) {
 
   if (NEW_RE.test(low)) return startOver(s, to, phone);
   if (MYQ_RE.test(low)) return showMyQuotes(s, to);
-  if (ENROLL_RE.test(low)) return startEnroll(s, to, true);
+  if (ENROLL_RE.test(low)) return startEnroll(s, to, 'change', false);
+  if (NAME_RE.test(low)) return startEnroll(s, to, 'rep', false);
   if (SETUP_RE.test(low)) return startSetup(s, to);
   if (s.stage === 'setup') return setupText(s, to, text);
   if (s.stage === 'new') {
     s.stage = 'collect';
-    if (GREET_RE.test(low)) { await sendText(to, tx(s, 'hello', firstName(s.contractorName))); return; }
+    if (GREET_RE.test(low)) { await sendText(to, tx(s, 'hello', firstName(greetName(s)))); return; }
   }
   if (s.stage === 'collect' && SKIP_RE.test(low) && !(s.awaiting === 'leaks' && /^(no|nope|none|nada)$/.test(low))) return skipCurrent(s, to);
   if (s.stage === 'collect' && BUILD_RE.test(low)) return showConfirm(s, to);
@@ -1468,8 +1482,15 @@ function applyMeasurement(d, m) {
 function needsEnrollment(phone) {
   const p = getProfile(phone);
   if (p && p.company) return false;
-  if (AUTO_ENROLL) { saveProfile(phone, { ...(p || {}), company: AUTO_ENROLL }); return false; }
+  if (AUTO_ENROLL) { saveProfile(phone, { ...(p || {}), company: AUTO_ENROLL, rep: (p && p.rep) || 'Test Rep' }); return false; }
   return true;
+}
+
+// Contractors enrolled before names were asked (company saved, no name) are asked once, before their next job.
+function needsRepName(phone) {
+  if (AUTO_ENROLL) return false;
+  const p = getProfile(phone);
+  return Boolean(p && p.company && !p.rep);
 }
 
 // The logo lives with the profile, not in the public folder
@@ -1485,16 +1506,35 @@ function saveLogo(phone, publicFile) {
   }
 }
 
-async function startEnroll(s, to, change = false) {
+// mode: 'full' (new contractor: company, name, logo), 'rep' (name only), 'change' (everything again).
+// fromGate: started automatically on a first message, as opposed to the contractor typing a command.
+async function startEnroll(s, to, mode = 'full', fromGate = true) {
   s.prevStage = s.stage === 'enroll' ? s.prevStage : s.stage;
   s.stage = 'enroll';
+  const p = getProfile(to) || {};
+  s.enroll = { mode, fromGate, company: mode === 'rep' ? p.company : null, rep: null, logoFile: null, suggested: '' };
+  if (mode === 'rep') { s.awaiting = 'enroll_rep'; return askRep(s, to); }
   s.awaiting = 'enroll_company';
-  s.enroll = { company: null, logoFile: null, change };
-  if (!change) await sendText(to, tx(s, 'enrollWelcome'));
+  if (fromGate) await sendText(to, tx(s, 'enrollWelcome'));
   return sendText(to, tx(s, 'sCompany'));
 }
 
 const askLogo = (s, to) => sendButtons(to, tx(s, 'qLogo', s.enroll.company), [{ id: 'logo:none', title: btn(s, 'noLogo') }]);
+
+// The WhatsApp profile name is offered for confirmation, never printed on a customer's report unchecked.
+function askRep(s, to) {
+  const p = getProfile(to) || {};
+  const sug = validName(p.rep) ? p.rep : (validName(s.contractorName) ? s.contractorName : '');
+  s.enroll.suggested = sug;
+  if (sug) return sendButtons(to, tx(s, 'qRepSuggest', sug), [{ id: 'rep:yes', title: btn(s, 'yesMe') }]);
+  return sendText(to, tx(s, 'qRep'));
+}
+
+function afterRep(s, to) {
+  if (s.enroll.mode === 'rep') return finishEnroll(s, to);
+  s.awaiting = 'enroll_logo';
+  return askLogo(s, to);
+}
 
 async function enrollText(s, to, text) {
   const t = text.trim();
@@ -1502,8 +1542,14 @@ async function enrollText(s, to, text) {
   if (s.awaiting === 'enroll_company') {
     if (GREET_RE.test(low) || SKIP_RE.test(low) || t.length < 2) return sendText(to, tx(s, 'needCompany'));
     s.enroll.company = t.replace(/\s+/g, ' ').slice(0, 80);
-    s.awaiting = 'enroll_logo';
-    return askLogo(s, to);
+    s.awaiting = 'enroll_rep';
+    return askRep(s, to);
+  }
+  if (s.awaiting === 'enroll_rep') {
+    if (s.enroll.suggested && /^(yes|y|yeah|yep|ok|si|sí|that's me|thats me|soy yo)$/i.test(low)) { s.enroll.rep = s.enroll.suggested; return afterRep(s, to); }
+    if (GREET_RE.test(low) || SKIP_RE.test(low) || !validName(t)) return sendText(to, tx(s, 'needRep'));
+    s.enroll.rep = t.replace(/\s+/g, ' ').slice(0, 60);
+    return afterRep(s, to);
   }
   if (/^(no|none|skip|omitir|no logo|sin logo|nope)$/.test(low)) return finishEnroll(s, to);
   await sendText(to, tx(s, 'nudge'));
@@ -1511,6 +1557,7 @@ async function enrollText(s, to, text) {
 }
 
 async function enrollButton(s, to, id) {
+  if (id === 'rep:yes' && s.awaiting === 'enroll_rep' && s.enroll.suggested) { s.enroll.rep = s.enroll.suggested; return afterRep(s, to); }
   if (id === 'logo:none' && s.awaiting === 'enroll_logo') return finishEnroll(s, to);
   return null;
 }
@@ -1523,17 +1570,27 @@ async function enrollLogo(s, to, message) {
 
 async function finishEnroll(s, to) {
   const e = s.enroll;
-  const next = { ...(getProfile(to) || {}), company: e.company };
-  if (e.logoFile) next.logoFile = e.logoFile; else delete next.logoFile;
+  const next = { ...(getProfile(to) || {}) };
+  if (e.mode !== 'rep') {
+    next.company = e.company;
+    if (e.logoFile) next.logoFile = e.logoFile; else delete next.logoFile;
+  }
+  next.rep = e.rep;
   saveProfile(to, next);
   s.profile = getProfile(to);
   s.enroll = null;
-  await sendText(to, tx(s, 'enrollDone', e.company, Boolean(e.logoFile)));
-  if (e.change) { s.stage = s.prevStage && s.prevStage !== 'new' ? s.prevStage : 'collect'; s.awaiting = null; return null; }
+  await sendText(to, e.mode === 'rep' ? tx(s, 'repDone', next.rep) : tx(s, 'enrollDone', next.company, Boolean(next.logoFile), next.rep));
+  if (!e.fromGate) {
+    s.stage = s.prevStage && s.prevStage !== 'new' ? s.prevStage : 'collect';
+    s.awaiting = null;
+    if (s.stage === 'collect') return advance(s, to); // pick the job up where it was left
+    if (s.stage === 'confirm') return showConfirm(s, to);
+    return null;
+  }
   s.stage = 'collect';
   s.awaiting = null;
   if (s.images.length) { await sendText(to, tx(s, 'gotPhotos', s.images.length)); return advance(s, to); } // photos sent before enrolling are kept
-  return sendText(to, tx(s, 'hello', firstName(s.contractorName)));
+  return sendText(to, tx(s, 'hello', firstName(greetName(s))));
 }
 
 // ----- "my quotes": the contractor's remembered reports, newest first -----
@@ -1715,8 +1772,14 @@ function handleIncoming(value, message, host) {
       }
       if (s.stage === 'new' && needsEnrollment(phone)) {
         if (message.type === 'text' && /^(hola|buenas|buenos|necesito|cotizaci)/i.test(message.text.body.trim())) s.lang = 'es';
-        await startEnroll(s, phone);
+        await startEnroll(s, phone, 'full', true);
         if (message.type === 'image') await onImage(s, phone, message); // keep photos sent first
+        return;
+      }
+      if (s.stage === 'new' && needsRepName(phone)) {
+        if (message.type === 'text' && /^(hola|buenas|buenos|necesito|cotizaci)/i.test(message.text.body.trim())) s.lang = 'es';
+        await startEnroll(s, phone, 'rep', true);
+        if (message.type === 'image') await onImage(s, phone, message);
         return;
       }
       if (s.stage === 'enroll') {
