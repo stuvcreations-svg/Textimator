@@ -28,9 +28,8 @@ const waToken = process.env.WA_TOKEN;
 const waPhoneId = process.env.WA_PHONE_ID;
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-const COMPANY_NAME = process.env.COMPANY_NAME || '';
-const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || '';
-const REP_NAME = process.env.REP_NAME || '';
+// Automated tests only: gives every new phone this company name so tests can skip enrollment. Never set it in production.
+const AUTO_ENROLL = process.env.AUTO_ENROLL_COMPANY || '';
 // Better = Good + this %, and Best = Better + this %. The contractor only ever enters the Good price.
 const TIER_STEP_PCT = Number(process.env.TIER_STEP_PCT || 10);
 const PHOTO_WAIT_MS = Number(process.env.PHOTO_WAIT_MS || 6000); // wait for the last photo before replying
@@ -57,6 +56,9 @@ function saveProfile(phone, p) {
   PROFILES[phone] = p;
   try { fs.writeFileSync(PROFILE_FILE, JSON.stringify(PROFILES, null, 2)); } catch (e) { console.error('❌ Could not save profile:', e.message); }
 }
+
+const LOGO_DIR = path.join(DATA_DIR, 'logos');
+if (!fs.existsSync(LOGO_DIR)) fs.mkdirSync(LOGO_DIR, { recursive: true });
 
 // Every report gets a secret token so the customer's "Accept" can be matched to the right quote and contractor.
 const QUOTES_FILE = path.join(DATA_DIR, 'quotes.json');
@@ -131,6 +133,13 @@ const TXT = {
     lblCondition: '🔎',
     condWords: { serviceable: 'Serviceable', monitor: 'Monitor', end_of_life: 'End of life' },
     blankCondition: 'shingle condition',
+    enrollWelcome: "Welcome! 👋 I'm Textimator. First, a one-minute setup so every report carries your company name and logo.",
+    needCompany: 'I need your company name to put on your reports. What is it?',
+    qLogo: (name) => `Nice to meet you, ${name}! Now send your logo as an image. No logo? Tap below and I'll make a clean header from your name.`,
+    enrollDone: (name, logo) => `✅ Done! ${name}${logo ? ' and your logo' : ''} will appear on every report you create. Type "my quotes" any time to see your past reports.`,
+    myQuotesHead: 'Your latest reports:',
+    myQuotesNone: "You haven't created any reports yet.",
+    qAccepted: '✅ accepted', qSent: '⏳ waiting',
     qStories: 'How many stories is the house?',
     qLeaks: 'Has the homeowner reported any leaks?',
     nudge: '👆 Tap one of the buttons, or type your answer.',
@@ -143,7 +152,7 @@ const TXT = {
     sLicense: "What's your license number?",
     sColor: 'Brand color? Tap one, or type a code like #1A5FB4.',
     sLogo: 'Send your logo as an image.',
-    btn: { serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
+    btn: { noLogo: 'No logo', serviceable: 'Serviceable', monitor: 'Monitor', endOfLife: 'End of life', addBrand: 'Add branding', blue: 'Blue', green: 'Green', story1: '1 story', story2: '2 stories', yes: 'Yes', no: 'No', unsure: 'Not sure', add: 'Add details', payStandard: 'Deposit + stages', payPoc: 'On completion', themeDay: 'Day', themeDark: 'Dark', themeBlush: 'Blush', setupNow: 'Set up now', notNow: 'Not now', replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance', skip: 'Skip', nothing: 'Nothing else', build: 'Build report', change: 'Change something', newq: 'New quote', edit: 'Make a change' }
   },
   es: {
     hello: (n) => `¡Hola ${n}! 👋 Envíame las fotos del techo cuando quieras (una general y algunas de cerca de los daños), y luego dime quién es el cliente y la dirección. ¿Tienes un informe de medición del techo? Envía el PDF también.`,
@@ -206,6 +215,13 @@ const TXT = {
     lblCondition: '🔎',
     condWords: { serviceable: 'Aceptable', monitor: 'Vigilar', end_of_life: 'Fin de vida' },
     blankCondition: 'estado de las tejas',
+    enrollWelcome: '¡Bienvenido! 👋 Soy Textimator. Primero, una configuración de un minuto para que cada informe lleve el nombre y el logo de tu empresa.',
+    needCompany: 'Necesito el nombre de tu empresa para ponerlo en tus informes. ¿Cómo se llama?',
+    qLogo: (name) => `¡Mucho gusto, ${name}! Ahora envía tu logo como imagen. ¿No tienes logo? Toca abajo y haré un encabezado limpio con tu nombre.`,
+    enrollDone: (name, logo) => `✅ ¡Listo! ${name}${logo ? ' y tu logo' : ''} aparecerán en cada informe que crees. Escribe "mis cotizaciones" cuando quieras ver tus informes anteriores.`,
+    myQuotesHead: 'Tus últimos informes:',
+    myQuotesNone: 'Todavía no has creado informes.',
+    qAccepted: '✅ aceptado', qSent: '⏳ en espera',
     qStories: '¿Cuántos pisos tiene la casa?',
     qLeaks: '¿El dueño ha reportado goteras?',
     nudge: '👆 Toca uno de los botones, o escribe tu respuesta.',
@@ -218,7 +234,7 @@ const TXT = {
     sLicense: '¿Cuál es tu número de licencia?',
     sColor: '¿Color de tu marca? Toca uno, o escribe un código como #1A5FB4.',
     sLogo: 'Envía tu logo como imagen.',
-    btn: { serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
+    btn: { noLogo: 'Sin logo', serviceable: 'Aceptable', monitor: 'Vigilar', endOfLife: 'Fin de vida', addBrand: 'Agregar marca', blue: 'Azul', green: 'Verde', story1: '1 piso', story2: '2 pisos', yes: 'Sí', no: 'No', unsure: 'No sé', add: 'Agregar datos', payStandard: 'Depósito + etapas', payPoc: 'Al terminar', themeDay: 'Día', themeDark: 'Oscuro', themeBlush: 'Rosado', setupNow: 'Configurar ahora', notNow: 'Ahora no', replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro', skip: 'Omitir', nothing: 'Nada más', build: 'Crear informe', change: 'Cambiar algo', newq: 'Nueva cotización', edit: 'Hacer un cambio' }
   }
 };
 const tx = (s, key, ...args) => {
@@ -452,7 +468,7 @@ function newSession(name, lang, profile) {
   return {
     contractorName: name, lang: lang || 'en', stage: 'new', // new | collect | confirm | changing | setup | building | done
     profile: profile || null, data: freshData(profile), images: [], skipped: new Set(), tries: {}, awaiting: null, extrasDone: false, photoTipSent: false,
-    report: null, photoTimer: null, quoteNumber: `Q-${Math.floor(100000 + Math.random() * 900000)}`, queue: Promise.resolve()
+    report: null, photoTimer: null, quoteNo: null, queue: Promise.resolve()
   };
 }
 
@@ -658,9 +674,10 @@ function applyIntake(d, s) {
   const D = s.data;
   d.meta = d.meta || {};
   const P = s.profile || {};
-  d.meta.company = P.company || COMPANY_NAME || s.contractorName;
-  d.meta.companyAddress = P.companyAddress || COMPANY_ADDRESS;
-  d.meta.rep = P.rep || REP_NAME;
+  d.meta.company = P.company || s.contractorName; // every report carries the name of the contractor who made it
+  d.meta.companyAddress = P.companyAddress || '';
+  d.meta.rep = P.rep || '';
+  d.meta.reportNo = s.quoteNo || '';
   d.meta.date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   d.meta.dateLabel = d.meta.dateLabel || 'Report date';
   d.meta.theme = themeOf(D.report_theme) || themeOf(REPORT_THEME) || 'day';
@@ -673,7 +690,10 @@ function applyIntake(d, s) {
   d.meta.leadSource = D.lead_source || 'retail';
   d.meta.claimNumber = D.lead_source === 'insurance' ? D.claim_number || '' : '';
   let logo = '';
-  try { if (P.logoFile && fs.existsSync(path.join(publicDir, P.logoFile))) logo = `data:image/jpeg;base64,${fs.readFileSync(path.join(publicDir, P.logoFile)).toString('base64')}`; } catch (e) { logo = ''; }
+  try {
+    const lf = P.logoFile && [path.join(LOGO_DIR, P.logoFile), path.join(publicDir, P.logoFile)].find((f) => fs.existsSync(f));
+    if (lf) logo = `data:image/jpeg;base64,${fs.readFileSync(lf).toString('base64')}`;
+  } catch (e) { logo = ''; }
   d.meta.brand = { phone: P.phone || '', whatsapp: P.phone || '', license: P.license || '', color: P.brandColor || '', logo };
   d.discount = D.discount && D.discount !== 'none' ? { pct: D.discount.pct, name: String(D.discount.name || 'customer').toLowerCase() } : null;
   d.terms = {
@@ -751,8 +771,15 @@ async function doBuild(s, to, host) {
     const token = crypto.randomBytes(12).toString('hex');
     d.meta.acceptToken = token;
     d.meta.acceptUrl = `https://${host}/accept`;
-    QUOTES[token] = { phone: to, quoteNumber: s.quoteNumber, address: d.meta.addressLine1 || '', created: Date.now() };
-    saveQuotes();
+    // The first build of a quote takes the contractor's next number; edits and rebuilds keep it.
+    if (!s.quoteNo) {
+      const pr0 = getProfile(to) || {};
+      const n = pr0.nextNumber || 1;
+      saveProfile(to, { ...pr0, nextNumber: n + 1 });
+      s.profile = getProfile(to);
+      s.quoteNo = `Q-${String(n).padStart(4, '0')}`;
+    }
+    d.meta.reportNo = s.quoteNo;
     if (!(d.findings || []).length) throw new Error('No findings written');
     if (!s.data.condition) d.flags.push('NOTE: The shingle condition was not rated, so the condition meter is hidden.');
     const said = `${(d.verdict && d.verdict.headline) || ''} ${(d.verdict && d.verdict.paragraph) || ''}`;
@@ -765,6 +792,11 @@ async function doBuild(s, to, host) {
     const fileName = `Roof_Quote_${crypto.randomBytes(8).toString('hex')}.html`;
     fs.writeFileSync(path.join(publicDir, fileName), renderQuoteHtml(d), 'utf8');
     const url = `https://${host}/files/${fileName}`;
+    const listPrices = (d.options || []).map((o) => o.listPrice).filter((v) => v != null);
+    const rItems = (d.repair && d.repair.items) || [];
+    const repairSum = d.repair && d.repair.totalPrice != null ? d.repair.totalPrice : (rItems.length && rItems.every((x) => x.price != null) ? rItems.reduce((t, x) => t + x.price, 0) : null);
+    QUOTES[token] = { phone: to, quoteNumber: s.quoteNo, no: s.quoteNo, customer: d.meta.homeowner || '', address: d.meta.addressLine1 || '', price: listPrices.length ? Math.min(...listPrices) : repairSum, url, created: Date.now() };
+    saveQuotes();
     s.stage = 'done'; s.awaiting = null;
     const notes = buildNotes(s, d.flags);
     if (notes.text) {
@@ -772,7 +804,7 @@ async function doBuild(s, to, host) {
       else await sendText(to, notes.text);
     }
     await sendButtons(to, tx(s, 'ready', url), [{ id: 'change', title: btn(s, 'edit') }, { id: 'newquote', title: btn(s, 'newq') }]);
-    await sendDocument(to, url, fileName, `Estimate Proposal ${s.quoteNumber}`);
+    await sendDocument(to, url, fileName, `Estimate Proposal ${s.quoteNo}`);
     const pr = getProfile(to);
     if (!pr || !pr.offered) {
       saveProfile(to, { ...(pr || {}), offered: true });
@@ -842,6 +874,8 @@ async function quickAnswer(s, to, low) {
 const SKIP_RE = /^(skip|omitir|saltar|no|none|nothing|nope|n\/a|nada|ninguno|no sé|no se|i don'?t know|idk|dont know)\.?$/i;
 const BUILD_RE = /^(generate|build|done|send it|create|genera|generar|listo|crear)( it| report| quote)?\.?$/i;
 const NEW_RE = /^(new quote|new|start over|reset|nueva cotizaci[oó]n|nueva|empezar de nuevo)\.?$/i;
+const MYQ_RE = /^(my quotes|quotes|history|my reports|mis cotizaciones|historial|mis informes)$/i;
+const ENROLL_RE = /^(company|logo|my company|company name|empresa|mi empresa)$/i;
 const SETUP_RE = /^(setup|set up|settings|profile|my settings|configurar|ajustes|perfil)$/i;
 const GREET_RE = /^(hi|hello|hey|hola|start|empezar|buenas|buenos d[ií]as)\b[\s!.,]*$/i;
 
@@ -890,6 +924,8 @@ async function onText(s, to, text, host, phone) {
   const low = text.trim().toLowerCase();
 
   if (NEW_RE.test(low)) return startOver(s, to, phone);
+  if (MYQ_RE.test(low)) return showMyQuotes(s, to);
+  if (ENROLL_RE.test(low)) return startEnroll(s, to, true);
   if (SETUP_RE.test(low)) return startSetup(s, to);
   if (s.stage === 'setup') return setupText(s, to, text);
   if (s.stage === 'new') {
@@ -952,7 +988,8 @@ async function onText(s, to, text, host, phone) {
 async function onImage(s, to, message) {
   if (s.stage === 'setup' && s.awaiting === 'setup_logo') {
     const logo = await downloadWhatsAppImage(message.image.id);
-    if (logo) s.draft.logoFile = logo;
+    const stored = logo ? saveLogo(to, logo) : null;
+    if (stored) s.draft.logoFile = stored;
     return setupNext(s, to);
   }
   if (/measure|medici[oó]n|eagleview|quickmeasure|hover|roofr/i.test(message.image.caption || '')) return onMeasurement(s, to, { id: message.image.id, mime: 'image/jpeg' });
@@ -969,7 +1006,7 @@ async function onImage(s, to, message) {
 }
 
 async function photosSettled(s, to) {
-  if (s.stage === 'building') return;
+  if (s.stage === 'building' || s.stage === 'enroll') return;
   const ack = tx(s, 'gotPhotos', s.images.length);
   if (s.stage === 'done') { s.report = null; return doBuild(s, to, s.host); } // new photos: rewrite the findings
   if (s.awaiting && s.awaiting !== 'photo' && s.awaiting !== 'confirm') return sendText(to, ack);
@@ -1120,8 +1157,94 @@ function applyMeasurement(d, m) {
   };
 }
 
+// ----- Enrollment: a first-time contractor gives the company name (required) and a logo (optional) before the first job -----
+function needsEnrollment(phone) {
+  const p = getProfile(phone);
+  if (p && p.company) return false;
+  if (AUTO_ENROLL) { saveProfile(phone, { ...(p || {}), company: AUTO_ENROLL }); return false; }
+  return true;
+}
+
+// The logo lives with the profile, not in the public folder
+function saveLogo(phone, publicFile) {
+  try {
+    const name = `${String(phone).replace(/\D/g, '')}.jpg`;
+    fs.copyFileSync(path.join(publicDir, publicFile), path.join(LOGO_DIR, name));
+    try { fs.unlinkSync(path.join(publicDir, publicFile)); } catch (e) { /* the copy is what matters */ }
+    return name;
+  } catch (e) {
+    console.error('❌ Could not save logo:', e.message);
+    return null;
+  }
+}
+
+async function startEnroll(s, to, change = false) {
+  s.prevStage = s.stage === 'enroll' ? s.prevStage : s.stage;
+  s.stage = 'enroll';
+  s.awaiting = 'enroll_company';
+  s.enroll = { company: null, logoFile: null, change };
+  if (!change) await sendText(to, tx(s, 'enrollWelcome'));
+  return sendText(to, tx(s, 'sCompany'));
+}
+
+const askLogo = (s, to) => sendButtons(to, tx(s, 'qLogo', s.enroll.company), [{ id: 'logo:none', title: btn(s, 'noLogo') }]);
+
+async function enrollText(s, to, text) {
+  const t = text.trim();
+  const low = t.toLowerCase();
+  if (s.awaiting === 'enroll_company') {
+    if (GREET_RE.test(low) || SKIP_RE.test(low) || t.length < 2) return sendText(to, tx(s, 'needCompany'));
+    s.enroll.company = t.replace(/\s+/g, ' ').slice(0, 80);
+    s.awaiting = 'enroll_logo';
+    return askLogo(s, to);
+  }
+  if (/^(no|none|skip|omitir|no logo|sin logo|nope)$/.test(low)) return finishEnroll(s, to);
+  await sendText(to, tx(s, 'nudge'));
+  return askLogo(s, to);
+}
+
+async function enrollButton(s, to, id) {
+  if (id === 'logo:none' && s.awaiting === 'enroll_logo') return finishEnroll(s, to);
+  return null;
+}
+
+async function enrollLogo(s, to, message) {
+  const f = await downloadWhatsAppImage(message.image.id);
+  if (f) s.enroll.logoFile = saveLogo(to, f);
+  return finishEnroll(s, to);
+}
+
+async function finishEnroll(s, to) {
+  const e = s.enroll;
+  const next = { ...(getProfile(to) || {}), company: e.company };
+  if (e.logoFile) next.logoFile = e.logoFile; else delete next.logoFile;
+  saveProfile(to, next);
+  s.profile = getProfile(to);
+  s.enroll = null;
+  await sendText(to, tx(s, 'enrollDone', e.company, Boolean(e.logoFile)));
+  if (e.change) { s.stage = s.prevStage && s.prevStage !== 'new' ? s.prevStage : 'collect'; s.awaiting = null; return null; }
+  s.stage = 'collect';
+  s.awaiting = null;
+  if (s.images.length) { await sendText(to, tx(s, 'gotPhotos', s.images.length)); return advance(s, to); } // photos sent before enrolling are kept
+  return sendText(to, tx(s, 'hello', firstName(s.contractorName)));
+}
+
+// ----- "my quotes": the contractor's remembered reports, newest first -----
+async function showMyQuotes(s, to) {
+  const byNo = {};
+  for (const q of Object.values(QUOTES)) {
+    if (q.phone !== to || !q.no) continue;
+    const cur = byNo[q.no];
+    byNo[q.no] = { ...(!cur || q.created > cur.created ? q : cur), accepted: Boolean((cur && cur.accepted) || q.accepted) };
+  }
+  const mine = Object.values(byNo).sort((x, y) => y.created - x.created).slice(0, 5);
+  if (!mine.length) return sendText(to, tx(s, 'myQuotesNone'));
+  const lines = mine.map((q) => `${q.no} · ${q.customer || '—'} · ${q.address || ''}${q.price != null ? ` · ${money(q.price)}` : ''} · ${q.accepted ? tx(s, 'qAccepted') : tx(s, 'qSent')}${q.url ? `\n${q.url}` : ''}`);
+  return sendText(to, `${tx(s, 'myQuotesHead')}\n\n${lines.join('\n\n')}`);
+}
+
 // ----- One-time setup: company, usual shingles and warranties, how you get paid, look of the reports -----
-const SETUP_ORDER = ['setup_company', 'setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_pay', 'setup_theme', 'setup_brand', 'setup_phone', 'setup_license', 'setup_color', 'setup_logo'];
+const SETUP_ORDER = ['setup_rep', 'setup_shingles', 'setup_years', 'setup_mfr', 'setup_pay', 'setup_theme', 'setup_brand', 'setup_phone', 'setup_license', 'setup_color', 'setup_logo'];
 
 async function startSetup(s, to) {
   s.prevStage = s.stage === 'setup' ? s.prevStage : s.stage;
@@ -1199,7 +1322,7 @@ async function setupButton(s, to, id) {
 }
 
 async function finishSetup(s, to) {
-  const profile = { ...s.draft, offered: true };
+  const profile = { ...(getProfile(to) || {}), ...s.draft, offered: true }; // keeps the saved report counter and logo
   saveProfile(to, profile);
   s.profile = profile;
   // Fill any blanks in the current job from the new defaults (typed values stay)
@@ -1256,6 +1379,18 @@ function handleIncoming(value, message, host) {
     s = userSessions.get(phone) || s;
     s.host = host;
     try {
+      if (s.stage === 'new' && needsEnrollment(phone)) {
+        if (message.type === 'text' && /^(hola|buenas|buenos|necesito|cotizaci)/i.test(message.text.body.trim())) s.lang = 'es';
+        await startEnroll(s, phone);
+        if (message.type === 'image') await onImage(s, phone, message); // keep photos sent first
+        return;
+      }
+      if (s.stage === 'enroll') {
+        if (message.type === 'text') await enrollText(s, phone, message.text.body);
+        else if (message.type === 'interactive') await enrollButton(s, phone, (message.interactive?.button_reply || {}).id);
+        else if (message.type === 'image') await (s.awaiting === 'enroll_logo' ? enrollLogo(s, phone, message) : onImage(s, phone, message));
+        return;
+      }
       if (message.type === 'text') {
         console.log(`💬 Text from ${name}: ${message.text.body}`);
         await onText(s, phone, message.text.body, host, phone);

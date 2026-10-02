@@ -56,7 +56,7 @@ Repair rules: never use `DEFINING` severity. The verdict says what will be repai
 
 ### Schema (annotated by example)
 
-`findings[].caption` (2 to 5 words) is required. `glance` is optional. `terms.paymentMode` is "standard", "on_completion" or "deposit_balance". `meta.theme`, `meta.themeSwitcher`, `meta.brand`, `meta.acceptToken` and `meta.acceptUrl` are set by the app; do not output them. `meta.dateLabel` is "Report date" by default, or "Inspection date" if requested. `meta.roofDescriptor` and `meta.roofNote` come from the chat (e.g. "one story", "one story, garage attached"). `meta.rep` and `meta.companyAddress` may be empty. When a measurement report exists, fill `meta.pitch`, `meta.facets`, `meta.measureSource`, `meta.measureDate` and `measurements` (`ridges`, `hips`, `valleys`, `rakes`, `eaves`, `bends`, `drip`, `step`, `flash`, all in feet).
+`findings[].caption` (2 to 5 words) is required. `glance` is optional. `terms.paymentMode` is "standard", "on_completion" or "deposit_balance". `meta.company`, `meta.reportNo`, `meta.theme`, `meta.themeSwitcher`, `meta.brand`, `meta.acceptToken` and `meta.acceptUrl` are set by the app; do not output them. `meta.dateLabel` is "Report date" by default, or "Inspection date" if requested. `meta.roofDescriptor` and `meta.roofNote` come from the chat (e.g. "one story", "one story, garage attached"). `meta.rep` and `meta.companyAddress` may be empty. When a measurement report exists, fill `meta.pitch`, `meta.facets`, `meta.measureSource`, `meta.measureDate` and `measurements` (`ridges`, `hips`, `valleys`, `rakes`, `eaves`, `bends`, `drip`, `step`, `flash`, all in feet).
 
 ```json
 {
