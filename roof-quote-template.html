@@ -146,6 +146,7 @@ tr.tot td{font-weight:600}
 .go[disabled]{opacity:.65}
 .tick{width:54px;height:54px;border-radius:50%;background:var(--grn);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:12px}
 @media print{.abar,.sheet{display:none!important}body{padding-bottom:0}}
+.dl{display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:14px}
 .dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--text);background:linear-gradient(90deg,var(--text) 50%,transparent 50%);display:inline-block}
 .abar .acc{white-space:nowrap;padding:0 18px}.abar .acc .sm{display:none}
 body{padding-bottom:84px}
@@ -291,7 +292,7 @@ function render(d){
  const REPAIR=(M.jobType==='repair');
  const T=Object.assign({deposit:1000,depositPct:null,validityDays:30,timelineDays:REPAIR?null:7,woodPct:20,paymentMode:REPAIR?'on_completion':'standard'},d.terms);
  const POC=T.paymentMode==='on_completion',DB=T.paymentMode==='deposit_balance';
- const dep=p=>T.depositPct!=null?Math.round(p*T.depositPct/100):T.deposit;
+ const dep=p=>Math.min(p,T.depositPct!=null?Math.round(p*T.depositPct/100):T.deposit);
  const hasArea=num(M.areaSqFt)>0,co=esc(M.company),A=hasArea?num(M.areaSqFt).toLocaleString('en-US')+' sq ft':'To be confirmed',AN=hasArea?num(M.areaSqFt).toLocaleString('en-US'):'—',AQ=hasArea?A:'Full roof',PR=prices(d),D=d.discount,V=d.verdict||{};
  const strip=s=>esc(String(s||'').replace(/ manufacturer warranty$/,''));
  const tiers=['Good','Better','Best'],A1=esc(M.addressLine1),A2=esc(M.addressLine2);
@@ -345,8 +346,8 @@ function render(d){
  const qR=[['What exactly will you repair?','Only the items listed in this report, each tied to a finding. Work not listed is not included.'],['Will you check for hidden damage under the repair?','Yes. If more damage is found it is shown to you and priced in writing before anything is done.'],['Does the repair renew the rest of the roof?','No. Repairs fix the areas listed. The rest of the roof stays as it is.'],['Will new materials match the existing roof?','We match as closely as available. Weathered roofing rarely matches exactly.'],['Who backs the workmanship, and for how long?',(d.repair&&num(d.repair.laborYears)!=null)?`${co}: ${esc(d.repair.laborYears)} years on labor for the repairs listed.`:'Stated in writing before work starts.'],q[7],q[9],q[10],q[11]];
  if(T.timelineDays)qR.splice(7,0,['How long will the job take?',`Up to ${T.timelineDays} days.`]);
  const QS=REPAIR?qR:((d.compare&&d.compare.length==q.length)?q.map((x,i)=>[x[0],esc(d.compare[i])]):q);
- const stg=[['At signing (deposit)',money(T.deposit),()=>T.deposit],['Start of demolition','40% of balance',b=>b*.4],['Material delivery','30% of balance',b=>b*.3],['Materials installed','25% of balance',b=>b*.25],['Final inspection','5% of balance',b=>b*.05]];
- const stt=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c=='Price'?'Amount':c}</th>`).join('')}</tr>${stg.map(s=>`<tr><td>${s[0]}</td><td>${s[1]}</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(+s[2](p.p-T.deposit).toFixed(2))}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
+ const stg=[['At signing (deposit)',(PR.some(p=>p.p!=null&&p.p<T.deposit)?'Up to '+money(T.deposit):money(T.deposit)),()=>T.deposit],['Start of demolition','40% of balance',b=>b*.4],['Material delivery','30% of balance',b=>b*.3],['Materials installed','25% of balance',b=>b*.25],['Final inspection','5% of balance',b=>b*.05]];
+ const stt=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c=='Price'?'Amount':c}</th>`).join('')}</tr>${stg.map(s=>`<tr><td>${s[0]}</td><td>${s[1]}</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(+(s[0].startsWith('At signing')?Math.min(T.deposit,p.p):s[2](Math.max(0,p.p-T.deposit))).toFixed(2))}</td>`).join('')}</tr>`).join('')}<tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
  const sttP=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c=='Price'?'Amount':c}</th>`).join('')}</tr><tr><td>On completion, after final inspection</td><td>100% of price</td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr><tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
  const sttD=`<table><tr><th>Stage</th><th>Share</th>${cols.map(c=>`<th>${c=='Price'?'Amount':c}</th>`).join('')}</tr><tr><td>At signing (deposit)</td><td>${T.depositPct!=null?T.depositPct+'% of price':money(T.deposit)}</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(dep(p.p))}</td>`).join('')}</tr><tr><td>On completion, after final inspection</td><td>Balance</td>${PR.map(p=>`<td>${p.p==null?'$ —':money(p.p-dep(p.p))}</td>`).join('')}</tr><tr class="tot"><td>Total</td><td></td>${PR.map(p=>`<td>${money(p.p)}</td>`).join('')}</tr></table>`;
  const mw=NO?joinOr(O.map((o,i)=>`${strip(o.mfrWarranty)}${NO>1?` (${esc(labels[i])})`:''}`)):'—';
@@ -388,7 +389,7 @@ function render(d){
  ${REPAIR?'':scopeSec}
  <section style="background:var(--card)"><div class="w">${rh('Compare us against anyone')}<h2>Compare us against anyone</h2><p>Ask every contractor who quotes this ${REPAIR?'work':'roof'} the same ${REPAIR?'':'twelve '}questions. Here are our answers.</p><div class="tw"><table><tr><th>Ask every contractor</th><th>Our answer</th></tr>${QS.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('')}</table></div></div></section>
  <section><div class="w">${rh('Terms')}<h2>Terms, and no pressure</h2>${POC?`<p>No deposit is required. The full price is due on completion, after the final inspection.</p>`:DB?`<p>${T.depositPct!=null?T.depositPct+'%':money(T.deposit)} deposit at signing, credited to the job. The balance is due on completion, after the final inspection.</p>`:`<p>A ${money(T.deposit)} deposit at signing, credited to the job. California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less. The remaining balance is paid in four stages, each tied to work you can see.</p>`}<div class="tw">${POC?sttP:DB?sttD:stt}</div><p>${D?`<b class="p">Discount.</b> A ${esc(D.pct)}% ${esc(D.name)} discount is applied to ${NO>1?'every option':'your price'}. The ${NO>1?'prices above already include':'price above already includes'} it.<br>`:''}${tl}${wr}<b class="p">Changes.</b> Nothing outside this scope is done without a written change order you have signed, with the price stated first.<br><b class="p">Validity.</b> ${NO>1?'These prices hold':'This price holds'} for ${T.validityDays} days from ${esc(M.date)}.</p><div class="np"><div class="lab" style="color:var(--grn)">No pressure</div><p style="margin:8px 0 0">You do not need to decide today. This report is yours to keep. Take it, show it to anyone, and put the ${REPAIR?'':'twelve '}questions on the previous page to every contractor you talk to.${REPAIR?'':' The roof needs replacing; it does not need replacing by us unless we are the right choice.'}</p></div>
- <h2 style="margin-top:56px">Acceptance</h2><div class="lab" style="margin-bottom:6px">Prepared by</div><p class="p" style="font-size:15px">${M.rep?`<b>${esc(M.rep)}</b><br>Sales Representative, ${co}`:`<b>${co}</b>`}${M.companyAddress?`<br>${esc(M.companyAddress)}`:''}</p><div class="lab" style="margin-top:26px">Acceptance</div><p>${NO==1&&!REPAIR?`I accept the scope of work in this report for ${A1}, ${A2}, at the price of ${money(PR[0].p)}.`:`I accept the scope of work in this report for ${A1}, ${A2}${NO>1?', and choose the option marked below':''}.`}</p><button type="button" class="accbtn" data-accept>Accept this quote</button><div class="sig">${NO>1?`<div>Option chosen (${labels.join(' / ')})</div>`:''}<div>Homeowner signature</div><div>Homeowner name (print)</div><div>Date</div><div>For ${co}</div><div>Name (print)</div><div>Date</div></div></div></section>
+ <h2 style="margin-top:56px">Acceptance</h2><div class="lab" style="margin-bottom:6px">Prepared by</div><p class="p" style="font-size:15px">${M.rep?`<b>${esc(M.rep)}</b><br>Sales Representative, ${co}`:`<b>${co}</b>`}${M.companyAddress?`<br>${esc(M.companyAddress)}`:''}</p><div class="lab" style="margin-top:26px">Acceptance</div><p>${NO==1&&!REPAIR&&PR[0]&&PR[0].p!=null?`I accept the scope of work in this report for ${A1}, ${A2}, at the price of ${money(PR[0].p)}.`:`I accept the scope of work in this report for ${A1}, ${A2}${NO>1?', and choose the option marked below':''}.`}</p>${PR.some(p=>p&&p.p!=null)?'<button type="button" class="accbtn" data-accept>Accept this quote</button>':'<p><i>The price is to be confirmed in writing before you accept.</i></p>'}<div class="sig">${NO>1?`<div>Option chosen (${labels.join(' / ')})</div>`:''}<div>Homeowner signature</div><div>Homeowner name (print)</div><div>Date</div><div>For ${co}</div><div>Name (print)</div><div>Date</div></div></div></section>
  <footer><div class="w"><b>${co}</b>${BR.license?` · Lic. ${esc(BR.license)}`:''}${BR.phone?` · ${esc(BR.phone)}`:''}${BR.website?` · ${esc(BR.website)}`:''}<br>Roof Condition Report${M.reportNo?` ${esc(M.reportNo)}`:''} · ${A1}, ${A2}</div></footer>`;
 }
 const $=id=>document.getElementById(id);
@@ -413,7 +414,7 @@ function mountBar(d){
  const bar=document.createElement('div');bar.id='abar';bar.className='abar';
  bar.innerHTML=(M.themeSwitcher===false?'':`<button type="button" class="ib" id="thm" aria-label="Change look"><i class="dot"></i><span id="thmn"></span></button>`)+
   (ph?`<a class="ib" href="tel:${esc(ph.replace(/[^\d+]/g,''))}">Call</a>`:'')+(wa?`<a class="ib" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>`:'')+
-  `<button type="button" class="acc" id="accopen">${prev?'Accepted ✓':'<span class="lg">Accept this quote</span><span class="sm">Accept</span>'}</button>`;
+  (PRs.some(p=>p&&p.p!=null)?`<button type="button" class="acc" id="accopen">${prev?'Accepted ✓':'<span class="lg">Accept this quote</span><span class="sm">Accept</span>'}</button>`:'');
  document.body.appendChild(bar);
  const pr=o=>o.p!=null?money(o.p):'$ —';
  const sh=document.createElement('div');sh.id='acc';sh.className='sheet';sh.hidden=true;sh.setAttribute('role','dialog');sh.setAttribute('aria-modal','true');
@@ -423,12 +424,12 @@ function mountBar(d){
   <label class="fld">Type your full name as your signature<input id="accname" type="text" autocomplete="name" placeholder="Full name"></label>
   <label class="chk"><input id="accok" type="checkbox"><span>I agree to the scope of work, price and terms in this report.</span></label>
   <p class="err" id="accerr" hidden></p><button type="button" class="go" id="accgo">Accept and send</button></div>
-  <div id="accdone" hidden><div class="tick">✓</div><h3>Accepted</h3><p class="sub" id="accmsg"></p></div></div>`;
+  <div id="accdone" hidden><div class="tick">✓</div><h3>Accepted</h3><p class="sub" id="accmsg"></p><a id="acclink" class="go dl" href="#" target="_blank" rel="noopener" hidden>Download your confirmation (PDF)</a></div></div>`;
  document.body.appendChild(sh);
- const $q=x=>sh.querySelector(x),show=(done,msg)=>{$q('#accform').hidden=done;$q('#accdone').hidden=!done;if(msg)$q('#accmsg').textContent=msg};
- const open=()=>{sh.hidden=false;if(prev)show(true,`You accepted the ${prev.option} on ${new Date(prev.when).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}. ${M.company||'The contractor'} has your signature.`);else show(false)};
+ const $q=x=>sh.querySelector(x),show=(done,msg,link)=>{$q('#accform').hidden=done;$q('#accdone').hidden=!done;if(msg)$q('#accmsg').textContent=msg;const al=$q('#acclink');if(link){al.href=link;al.hidden=false}else al.hidden=true};
+ const open=()=>{sh.hidden=false;if(prev)show(true,`You accepted the ${prev.option} on ${new Date(prev.when).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}. ${M.company||'The contractor'} has your signature.`,prev.confirmationUrl);else show(false)};
  const err=t=>{const e=$q('#accerr');e.textContent=t;e.hidden=!t};
- document.getElementById('accopen').onclick=open;
+ const ao=document.getElementById('accopen');if(ao)ao.onclick=open;
  document.querySelectorAll('[data-accept]').forEach(b=>b.onclick=open);
  sh.addEventListener('click',e=>{if(e.target===sh||e.target.closest('[data-close]'))sh.hidden=true});
  const tb=document.getElementById('thm'),tn=document.getElementById('thmn');
@@ -438,15 +439,15 @@ function mountBar(d){
   const name=$q('#accname').value.trim();if(name.length<3){err('Please type your full name.');return}
   if(!$q('#accok').checked){err('Please tick the box to agree.');return}
   err('');const sel=sh.querySelector('input[name=o]:checked'),o=opts[sel?Number(sel.value):0];
-  const payload={token:tok,option:o.label,price:o.p,name,agreed:true,when:new Date().toISOString(),address:M.addressLine1||''};
+  const payload={token:tok,option:o.label,price:o.p,name,agreed:true,when:new Date().toISOString(),address:M.addressLine1||'',tz:(Intl.DateTimeFormat().resolvedOptions().timeZone||''),localTime:new Date().toLocaleString('en-GB',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})};
   const go=$q('#accgo');go.disabled=true;go.textContent='Sending…';
-  let ok=false,demo=false;
-  if(M.acceptUrl){try{const r=await fetch(M.acceptUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});ok=r.ok}catch(e){ok=false}}else{ok=true;demo=true}
+  let ok=false,demo=false,link='';
+  if(M.acceptUrl){try{const r=await fetch(M.acceptUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});ok=r.ok;if(ok){try{const j=await r.json();link=j.confirmationUrl||''}catch(e){}}}catch(e){ok=false}}else{ok=true;demo=true}
   if(!ok&&wa){window.open(`https://wa.me/${wa}?text=${encodeURIComponent(`Hi, I accept the quote for ${M.addressLine1||'the roof'}: ${o.label} ${o.p!=null?money(o.p):''}. Signed: ${name}`)}`,'_blank');ok=true}
   if(!ok){err('We could not send this. Please call or message '+(M.company||'the contractor')+'.');go.disabled=false;go.textContent='Accept and send';return}
-  prev=payload;try{localStorage.setItem(key,JSON.stringify(payload))}catch(e){}
-  document.getElementById('accopen').textContent='Accepted ✓';
-  show(true,demo?'Preview only: nothing was sent.':`${M.company||'The contractor'} has been notified. Thank you, ${name.split(' ')[0]}.`)};
+  prev={...payload,confirmationUrl:link};try{localStorage.setItem(key,JSON.stringify(prev))}catch(e){}
+  const ao2=document.getElementById('accopen');if(ao2)ao2.textContent='Accepted ✓';
+  show(true,demo?'Preview only: nothing was sent.':`${M.company||'The contractor'} has been notified. Thank you, ${name.split(' ')[0]}.`,link)};
 }
 window.renderReport=d=>{const m=validate(d);if(m.length)console.warn('Report missing inputs:',m);render(d);applyTheme(d);mountBar(d);return m};
 window.validateReport=validate;

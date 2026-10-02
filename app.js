@@ -19,7 +19,8 @@ try {
 }
 
 const app = express();
-app.use(express.json());
+// The raw body is kept so WhatsApp's signature can be checked against it.
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use('/files', express.static(publicDir)); // file names are random, so links can't be guessed
 
 const port = process.env.PORT || 3000;
@@ -32,6 +33,8 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const AUTO_ENROLL = process.env.AUTO_ENROLL_COMPANY || '';
 // Better = Good + this %, and Best = Better + this %. The contractor only ever enters the Good price.
 const TIER_STEP_PCT = Number(process.env.TIER_STEP_PCT || 10);
+// The setup offer waits a few seconds so it lands AFTER the report file (WhatsApp delivers attachments a little later than text).
+const OFFER_DELAY_MS = Number(process.env.OFFER_DELAY_MS || 8000);
 const PHOTO_WAIT_MS = Number(process.env.PHOTO_WAIT_MS || 6000); // wait for the last photo before replying
 
 // Default look: day (unless changed), or dark, blush, or auto (follows the customer's device). The customer can still switch on the page.
@@ -83,6 +86,8 @@ const TXT = {
     qArea: 'About how many sq ft is the roof? Or send the measurement report (PDF).',
     qPriceRep: (pct) => `What's the price for the Good option? I'll add ${pct}% for Better, and another ${pct}% for Best.`,
     formulaNote: (pct) => `Better = Good + ${pct}%, Best = Better + ${pct}%`,
+    needPriceRep: 'I need a price to build the quote. Type a number, like 20k. (0 is fine.)',
+    needPriceRpr: 'I need a price to build the quote. Type one total, or the repairs with prices, like: flashing $300, vents $200. (0 is fine.)',
     qPriceRpr: 'What are the repairs and their prices? Like: flashing $300, 12 shingles $650. Or one total.',
     qExtras: 'Anything else? (shingles, warranties, discount, timeline, payment terms) Type it all in one message, or tap below.',
     qChange: 'Sure, what should I change? Just type it.',
@@ -95,6 +100,9 @@ const TXT = {
     building: 'On it, building your report… ⏳',
     ready: (url) => `✅ Your report is ready:\n${url}`,
     notes: 'Notes for you (not in the report):',
+    acceptedMsg: (name, no, addr, opt, when) => `✅ ${name} accepted Quote ${no} for ${addr}.\n${opt}\nSigned by typing their name on ${when}.`,
+    pendingHead: '📬 While you were away:',
+    confirmCaption: (no, name) => `Acceptance confirmation ${no} · ${name}`,
     notesHead: 'Before you send this report:',
     notesPhotos: '📸 Photos not used',
     notesCheck: '⚠️ Please check',
@@ -113,7 +121,7 @@ const TXT = {
     qExtrasProfile: 'Any discount, or anything special for this job? Type it, or tap below.',
     qAdd: 'What should I add? Type it all in one message.',
     okay: '👍 No problem. Type "setup" any time.',
-    offerSetup: '💡 Want me to remember your company and your usual shingles and warranties? It takes a minute.',
+    offerSetup: '💡 Want me to remember your usual shingles, warranties, payment terms and branding (phone, license, color)? It takes a minute.',
     setupIntro: 'Quick setup, so I never ask these again. You can skip any question.',
     sCompany: "What's your company name?",
     sRep: 'What name should show on reports?',
@@ -165,6 +173,8 @@ const TXT = {
     qArea: '¿Cuántos pies cuadrados tiene el techo, más o menos? O envía el informe de medición (PDF).',
     qPriceRep: (pct) => `¿Cuál es el precio de la opción Bueno? Sumaré ${pct}% para Mejor, y otro ${pct}% para Óptimo.`,
     formulaNote: (pct) => `Mejor = Bueno + ${pct}%, Óptimo = Mejor + ${pct}%`,
+    needPriceRep: 'Necesito un precio para armar la cotización. Escribe un número, como 20k. (0 está bien.)',
+    needPriceRpr: 'Necesito un precio para armar la cotización. Escribe un total, o las reparaciones con su precio, así: flashing $300, ventilas $200. (0 está bien.)',
     qPriceRpr: '¿Qué reparaciones harás y cuánto cuesta cada una? Ej.: flashing $300, 12 tejas $650. O un total.',
     qExtras: '¿Algo más? (tejas, garantías, descuento, plazo, forma de pago) Escríbelo todo en un mensaje, o toca abajo.',
     qChange: 'Claro, ¿qué cambio? Escríbelo.',
@@ -177,6 +187,9 @@ const TXT = {
     building: 'Listo, preparando tu informe… ⏳',
     ready: (url) => `✅ Tu informe está listo:\n${url}`,
     notes: 'Notas para ti (no salen en el informe):',
+    acceptedMsg: (name, no, addr, opt, when) => `✅ ${name} aceptó la cotización ${no} para ${addr}.\n${opt}\nFirmó escribiendo su nombre el ${when}.`,
+    pendingHead: '📬 Mientras no estabas:',
+    confirmCaption: (no, name) => `Confirmación de aceptación ${no} · ${name}`,
     notesHead: 'Antes de enviar este informe:',
     notesPhotos: '📸 Fotos que no se usaron',
     notesCheck: '⚠️ Por favor revisa',
@@ -195,7 +208,7 @@ const TXT = {
     qExtrasProfile: '¿Algún descuento o algo especial para este trabajo? Escríbelo, o toca abajo.',
     qAdd: '¿Qué debo agregar? Escríbelo todo en un mensaje.',
     okay: '👍 Sin problema. Escribe "setup" cuando quieras.',
-    offerSetup: '💡 ¿Quieres que recuerde tu empresa y tus tejas y garantías habituales? Toma un minuto.',
+    offerSetup: '💡 ¿Quieres que recuerde tus tejas, garantías, forma de pago y marca habituales (teléfono, licencia, color)? Toma un minuto.',
     setupIntro: 'Configuración rápida, para no volver a preguntarte esto. Puedes omitir cualquier pregunta.',
     sCompany: '¿Cómo se llama tu empresa?',
     sRep: '¿Qué nombre debe aparecer en los informes?',
@@ -270,6 +283,75 @@ async function waPost(body, label) {
 
 const sendText = (to, text) => waPost({ to, type: 'text', text: { body: text } }, 'text');
 
+// ---- Signature check: Meta signs every webhook call with the App Secret. Calls without a valid signature are ignored. ----
+const WA_APP_SECRET = process.env.WA_APP_SECRET || '';
+if (!WA_APP_SECRET) console.error('⚠️ WA_APP_SECRET is not set, so incoming WhatsApp calls are NOT verified. Anyone who knows your URL could send fake messages. Set it in your environment.');
+function validSignature(req) {
+  if (!WA_APP_SECRET) return true;
+  const header = String(req.get('x-hub-signature-256') || '');
+  if (!header.startsWith('sha256=') || !req.rawBody) return false;
+  const expected = crypto.createHmac('sha256', WA_APP_SECRET).update(req.rawBody).digest('hex');
+  const given = header.slice(7);
+  return given.length === expected.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+}
+
+// ---- WhatsApp's 24-hour rule: free-form messages only work within 24 hours of the contractor's last message. ----
+// Outside that window an approved template is required, so we track the window, use a template when it is closed,
+// and hold the message until the contractor next writes if no template is configured.
+const WINDOW_MS = 23.5 * 60 * 60 * 1000; // a little under 24h, to be safe
+const TEMPLATE_ACCEPTED = process.env.WA_TEMPLATE_ACCEPTED || '';
+const TEMPLATE_LANG = process.env.WA_TEMPLATE_LANG || 'en_US';
+const TEMPLATE_LANG_ES = process.env.WA_TEMPLATE_LANG_ES || 'es';
+if (!TEMPLATE_ACCEPTED) console.error('ℹ️ WA_TEMPLATE_ACCEPTED is not set: an acceptance that arrives after 24h will wait until the contractor next messages the bot.');
+
+const WINDOWS_FILE = path.join(DATA_DIR, 'windows.json');
+const PENDING_FILE = path.join(DATA_DIR, 'pending.json');
+let WINDOWS = {}; let PENDING = {};
+try { WINDOWS = JSON.parse(fs.readFileSync(WINDOWS_FILE, 'utf8')); } catch (e) { WINDOWS = {}; }
+try { PENDING = JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8')); } catch (e) { PENDING = {}; }
+let windowsTimer = null;
+function touchWindow(phone) {
+  WINDOWS[phone] = Date.now();
+  if (windowsTimer) return;
+  windowsTimer = setTimeout(() => {
+    windowsTimer = null;
+    try { fs.writeFileSync(WINDOWS_FILE, JSON.stringify(WINDOWS)); } catch (e) { console.error('❌ Could not save windows:', e.message); }
+  }, 30000);
+}
+const windowOpen = (phone) => Boolean(WINDOWS[phone]) && Date.now() - WINDOWS[phone] < WINDOW_MS;
+function savePending() {
+  try { fs.writeFileSync(PENDING_FILE, JSON.stringify(PENDING)); } catch (e) { console.error('❌ Could not save pending notices:', e.message); }
+}
+function queuePending(phone, text, doc) {
+  PENDING[phone] = [...(PENDING[phone] || []), { text: text || '', doc: doc || null, at: Date.now() }].slice(-20);
+  savePending();
+}
+function takePending(phone) {
+  const list = PENDING[phone] || [];
+  if (list.length) { delete PENDING[phone]; savePending(); }
+  return list;
+}
+const sendTemplate = (to, name, lang, params) => waPost({
+  to, type: 'template',
+  template: { name, language: { code: lang }, components: [{ type: 'body', parameters: params.map((t) => ({ type: 'text', text: t })) }] }
+}, 'template');
+const tplText = (v) => String(v == null ? '' : v).replace(/[\n\r\t]+/g, ' ').replace(/ {2,}/g, ' ').trim().slice(0, 120) || '—';
+
+// Tells a contractor something they did not just ask for. Returns how it was delivered: sent, template or queued.
+// A document (the acceptance PDF) can only be sent inside the window, so outside it, it waits for the contractor's next message.
+async function notifyContractor(phone, text, tpl, doc) {
+  if (windowOpen(phone) && (await sendText(phone, text))) {
+    if (doc) await sendDocument(phone, doc.url, doc.filename, doc.caption);
+    return 'sent';
+  }
+  if (tpl && TEMPLATE_ACCEPTED && (await sendTemplate(phone, TEMPLATE_ACCEPTED, tpl.lang === 'es' ? TEMPLATE_LANG_ES : TEMPLATE_LANG, tpl.params.map(tplText)))) {
+    if (doc) queuePending(phone, '', doc);
+    return 'template';
+  }
+  queuePending(phone, text, doc);
+  return 'queued';
+}
+
 // Up to 3 tap buttons. If WhatsApp refuses buttons, fall back to plain text with the options listed.
 async function sendButtons(to, text, buttons) {
   const ok = await waPost({
@@ -339,6 +421,7 @@ RULES:
 - Put into "updates" ONLY what the message actually states. Never guess, never invent, never fill in typical values.
 - Translate every text value into professional English. "language" is the language the contractor wrote in.
 - "awaiting" tells you which question the contractor is answering. A bare answer belongs to that question.
+- A price or amount of 0 is a valid answer: return 0, never null. "Free", "no charge" or "courtesy" means a price of 0.
 - A bare number is NEVER a price unless awaiting is "price", and never an area unless awaiting is "area". When in doubt, leave it out.
 - intent "skip": they decline or don't know ("skip", "no", "none", "I don't know", "n/a") with nothing else useful. intent "build": they ask to generate/send/finish ("generate", "that's all, build it"). intent "new_quote": they want to start a different job. Otherwise "answer".
 
@@ -501,7 +584,7 @@ function nextQuestion(s) {
   if (!d.building_stories && !s.skipped.has('stories')) return 'stories';
   if (!d.leaks && !s.skipped.has('leaks')) return 'leaks';
   if (!d.condition && !s.skipped.has('condition')) return 'condition';
-  if (!pricesComplete(s) && !s.skipped.has('price')) return 'price';
+  if (!pricesComplete(s)) return 'price'; // the price is required (0 counts as a price)
   if (!s.extrasDone) return 'extras';
   return 'confirm';
 }
@@ -594,8 +677,8 @@ function buildNotes(s, flags) {
 }
 
 // Sends the next question (or the summary). Everything the contractor already told us is skipped.
-async function advance(s, to) {
-  const q = nextQuestion(s);
+async function advance(s, to, forced) {
+  const q = forced || nextQuestion(s);
   s.awaiting = q;
   const tip = !s.photoTipSent && s.images.length === 0 ? `\n\n${tx(s, 'photoTip')}` : '';
   if (tip) s.photoTipSent = true;
@@ -611,7 +694,7 @@ async function advance(s, to) {
     case 'leaks': return sendButtons(to, tx(s, 'qLeaks'), [{ id: 'lk:yes', title: btn(s, 'yes') }, { id: 'lk:no', title: btn(s, 'no') }, { id: 'lk:unknown', title: btn(s, 'unsure') }]);
     case 'condition': return sendButtons(to, tx(s, 'qCondition'), [{ id: 'cd:serviceable', title: btn(s, 'serviceable') }, { id: 'cd:monitor', title: btn(s, 'monitor') }, { id: 'cd:end_of_life', title: btn(s, 'endOfLife') }]);
     case 'price':
-      return sendButtons(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep', TIER_STEP_PCT), [skipBtn]);
+      return sendText(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep', TIER_STEP_PCT)); // no Skip button: the price is required
     case 'extras': {
       const known = s.profile && s.profile.tiers && s.profile.tiers.good && s.profile.tiers.good.shingle;
       return sendButtons(to, tx(s, known ? 'qExtrasProfile' : 'qExtras'), [{ id: 'extras:none', title: btn(s, 'nothing') }]);
@@ -621,6 +704,9 @@ async function advance(s, to) {
 }
 
 async function showConfirm(s, to) {
+  const d = s.data;
+  const missing = !d.customer_name_and_address ? 'addr' : !d.job_type ? 'type' : !pricesComplete(s) ? 'price' : null;
+  if (missing) return advance(s, to, missing); // required answers come first, even if the contractor typed "generate"
   if (s.images.length === 0) {
     s.awaiting = 'photo';
     return sendText(to, tx(s, 'needPhoto'));
@@ -762,6 +848,7 @@ function renderQuoteHtml(d) {
 }
 
 async function doBuild(s, to, host) {
+  if (!pricesComplete(s)) return advance(s, to, 'price');
   if (!s.data.customer_name_and_address) { s.awaiting = 'addr'; return sendText(to, tx(s, 'needAddr')); }
   if (s.images.length === 0) { s.awaiting = 'photo'; return sendText(to, tx(s, 'needPhoto')); }
   s.stage = 'building';
@@ -795,7 +882,7 @@ async function doBuild(s, to, host) {
     const listPrices = (d.options || []).map((o) => o.listPrice).filter((v) => v != null);
     const rItems = (d.repair && d.repair.items) || [];
     const repairSum = d.repair && d.repair.totalPrice != null ? d.repair.totalPrice : (rItems.length && rItems.every((x) => x.price != null) ? rItems.reduce((t, x) => t + x.price, 0) : null);
-    QUOTES[token] = { phone: to, quoteNumber: s.quoteNo, no: s.quoteNo, customer: d.meta.homeowner || '', address: d.meta.addressLine1 || '', price: listPrices.length ? Math.min(...listPrices) : repairSum, url, created: Date.now() };
+    QUOTES[token] = { phone: to, lang: s.lang, quoteNumber: s.quoteNo, no: s.quoteNo, customer: d.meta.homeowner || '', address: d.meta.addressLine1 || '', price: listPrices.length ? Math.min(...listPrices) : repairSum, url, confirm: buildConfirm(d, s), created: Date.now() };
     saveQuotes();
     s.stage = 'done'; s.awaiting = null;
     const notes = buildNotes(s, d.flags);
@@ -808,13 +895,190 @@ async function doBuild(s, to, host) {
     const pr = getProfile(to);
     if (!pr || !pr.offered) {
       saveProfile(to, { ...(pr || {}), offered: true });
-      await sendButtons(to, tx(s, 'offerSetup'), [{ id: 'setup', title: btn(s, 'setupNow') }, { id: 'setup:later', title: btn(s, 'notNow') }]);
+      setTimeout(() => {
+        s.queue = s.queue.then(() => sendButtons(to, tx(s, 'offerSetup'), [{ id: 'setup', title: btn(s, 'setupNow') }, { id: 'setup:later', title: btn(s, 'notNow') }])).catch((e) => console.error('❌ offer error:', e));
+      }, OFFER_DELAY_MS);
     }
   } catch (err) {
     console.error('❌ Report build error:', err);
     s.stage = 'confirm';
     await sendText(to, tx(s, 'hiccup'));
   }
+}
+
+// ----- Acceptance confirmation: what the customer agreed to, kept with the quote at the moment the report is built -----
+const moneyC2 = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const moneyC = (n) => {
+  const v = Number(n);
+  return '$' + (Number.isInteger(v) ? v.toLocaleString('en-US') : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+};
+const pdfSafe = (t) => String(t == null ? '' : t).replace(/[^\n\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018-\u201D\u2022\u20AC]/g, '?');
+let pdfKitLib = null;
+function pdfkit() {
+  if (pdfKitLib === null) {
+    try { pdfKitLib = require('pdfkit'); } catch (e) { console.error('ℹ️ pdfkit is not installed, so acceptance confirmations will not be created:', e.message); pdfKitLib = false; }
+  }
+  return pdfKitLib;
+}
+
+function scopeBullets(d) {
+  const T = d.terms || {};
+  if (d.meta && d.meta.jobType === 'repair') {
+    const items = ((d.repair || {}).items || []).map((i) => `${i.name}${i.price != null ? ` (${moneyC(i.price)})` : ''}`);
+    return [...items, 'Repairs fix the areas listed. They do not renew the rest of the roof.'];
+  }
+  const m = d.measurements;
+  const ft = (n) => (n == null ? null : `${Number(n).toLocaleString('en-US')} ft`);
+  const area = d.meta && Number(d.meta.areaSqFt) > 0 ? `${Number(d.meta.areaSqFt).toLocaleString('en-US')} sq ft` : 'the full roof';
+  return [
+    'Tear-off of all existing layers to the deck',
+    `New shingles, ${area}`,
+    `Damaged deck wood replaced as needed, up to ${T.woodPct != null ? T.woodPct : 20}%`,
+    'Synthetic underlayment',
+    m && ft(m.drip) ? `New drip edge, ${ft(m.drip)}` : 'New drip edge at every eave and rake',
+    m && ft(m.valleys) ? `New valley lining, ${ft(m.valleys)}` : 'New valley lining',
+    m && ft(m.step) ? `New step flashing, ${ft(m.step)}` : 'New flashing at walls and vents',
+    m && (m.hips != null || m.ridges != null) ? `New hip and ridge caps, ${ft((m.hips || 0) + (m.ridges || 0))}` : 'New hip and ridge caps throughout',
+    'New flashed boots at every pipe',
+    'Manufacturer warranty on materials',
+    ...(T.timelineDays ? [`Job complete in up to ${T.timelineDays} days`] : []),
+    'Clean-up and magnetic nail sweep'
+  ];
+}
+
+function buildConfirm(d, s) {
+  const D = d.discount;
+  const finalOf = (list) => (list == null ? null : (D ? Math.round(list * (1 - D.pct / 100)) : list));
+  let options;
+  if (d.meta.jobType === 'repair') {
+    const items = (d.repair && d.repair.items) || [];
+    const sum = d.repair && d.repair.totalPrice != null ? d.repair.totalPrice : (items.length && items.every((x) => x.price != null) ? items.reduce((t, x) => t + x.price, 0) : null);
+    options = [{ name: 'Repair quote', list: sum, final: finalOf(sum), labor: d.repair ? d.repair.laborYears : null }];
+  } else {
+    options = (d.options || []).map((o) => ({ name: o.name, shingle: o.shingle, mfr: o.mfrWarranty, labor: o.laborYears, list: o.listPrice, final: finalOf(o.listPrice) }));
+  }
+  const b = d.meta.brand || {};
+  return {
+    company: d.meta.company, phone: b.phone || '', license: b.license || '', color: b.color || '', logoFile: (s.profile || {}).logoFile || '',
+    homeowner: d.meta.homeowner, address: [d.meta.addressLine1, d.meta.addressLine2].filter(Boolean).join(', '), reportNo: d.meta.reportNo, reportDate: d.meta.date,
+    jobType: d.meta.jobType, options, discount: D ? { pct: D.pct, name: D.name } : null, terms: d.terms, scope: scopeBullets(d)
+  };
+}
+
+function payRows(final, t) {
+  const p = Number(final);
+  if (t.paymentMode === 'on_completion') return [['On completion, after final inspection', p]];
+  if (t.paymentMode === 'deposit_balance') {
+    const dep = Math.min(p, t.depositPct != null ? Math.round(p * t.depositPct / 100) : t.deposit);
+    return [['At signing (deposit)', dep], ['On completion, after final inspection', +(p - dep).toFixed(2)]];
+  }
+  const dep = Math.min(p, t.deposit != null ? t.deposit : 1000);
+  const bal = Math.max(0, p - dep);
+  return [['At signing (deposit)', dep], ['Start of demolition (40% of the balance)', +(bal * 0.4).toFixed(2)], ['Material delivery (30%)', +(bal * 0.3).toFixed(2)], ['Materials installed (25%)', +(bal * 0.25).toFixed(2)], ['Final inspection (5%)', +(bal * 0.05).toFixed(2)]];
+}
+
+// One clean page: who accepted what, for how much, when, and on which terms.
+function writeConfirmationPdf(file, c, acc, reportUrl, token, chosen) {
+  return new Promise((resolve, reject) => {
+    try {
+      const PDFDocument = pdfkit();
+      if (!PDFDocument) return reject(new Error('pdfkit is not installed'));
+      const doc = new PDFDocument({ size: 'LETTER', margin: 54, info: { Title: pdfSafe(`Acceptance confirmation ${c.reportNo}`), Author: pdfSafe(c.company) } });
+      const out = fs.createWriteStream(file);
+      out.on('finish', resolve); out.on('error', reject);
+      doc.pipe(out);
+      const L = 54; const W = doc.page.width - 108;
+      const accent = /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color : '#CE4E1B';
+      const gray = '#687176'; const ink = '#111517'; const ruleC = '#DED7CC';
+      const t = pdfSafe;
+      const T = c.terms || {};
+      let logo = false;
+      const lp = c.logoFile ? path.join(LOGO_DIR, c.logoFile) : '';
+      if (lp && fs.existsSync(lp)) { try { doc.image(lp, L, 54, { fit: [170, 44] }); logo = true; } catch (e) { logo = false; } }
+      if (!logo) doc.font('Helvetica-Bold').fontSize(15).fillColor(ink).text(t(c.company).toUpperCase(), L, 60, { width: W * 0.65 });
+      doc.font('Helvetica').fontSize(9).fillColor(gray).text(t([c.license ? `Lic. ${c.license}` : '', c.phone].filter(Boolean).join('   |   ')), L, 60, { width: W, align: 'right' });
+      doc.rect(L, 102, 36, 3).fill(accent);
+      doc.font('Helvetica').fontSize(25).fillColor(ink).text('Acceptance confirmation', L, 112);
+      doc.font('Helvetica').fontSize(11).fillColor(gray).text(t(`Report ${c.reportNo}  |  ${c.address}`), L, doc.y + 2, { width: W });
+
+      const section = (title) => {
+        doc.moveDown(0.7);
+        doc.font('Helvetica-Bold').fontSize(8.5).fillColor(gray).text(title.toUpperCase(), L, doc.y, { width: W, characterSpacing: 1 });
+        doc.moveDown(0.2);
+        const y = doc.y;
+        doc.moveTo(L, y).lineTo(L + W, y).lineWidth(0.6).strokeColor(ruleC).stroke();
+        doc.moveDown(0.35);
+      };
+      const kv = (k, v, bold) => {
+        const y0 = doc.y;
+        doc.font('Helvetica').fontSize(10).fillColor(gray).text(t(k), L, y0, { width: 125 });
+        const y1 = doc.y;
+        doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10.5).fillColor(ink).text(t(v), L + 130, y0, { width: W - 130 });
+        doc.y = Math.max(y1, doc.y) + 2;
+      };
+      const amt = (k, v, bold) => {
+        const y0 = doc.y;
+        doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10.5).fillColor(ink).text(t(k), L, y0, { width: W - 130 });
+        const y1 = doc.y;
+        doc.text(t(v), L + W - 120, y0, { width: 120, align: 'right' });
+        doc.y = Math.max(y1, doc.y) + 2;
+      };
+
+      const when = acc.localTime ? `${acc.localTime}${acc.tz ? ` (${acc.tz})` : ''}` : new Date(acc.when).toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
+      section('Accepted');
+      kv('Accepted by', acc.name, true);
+      kv('Accepted on', when);
+      kv('Contractor', c.company);
+
+      section('What was accepted');
+      const o = chosen || {};
+      kv('Option', o.name || acc.option, true);
+      if (o.shingle) kv('Shingles', o.shingle);
+      if (o.mfr) kv('Manufacturer warranty', String(o.mfr).replace(/ manufacturer warranty$/i, ''));
+      if (o.labor != null) kv('Labor warranty', `${o.labor} years`);
+      doc.moveDown(0.3);
+      if (c.discount && o.list != null) {
+        amt('List price', moneyC(o.list));
+        amt(`${c.discount.name ? c.discount.name.charAt(0).toUpperCase() + c.discount.name.slice(1) + ' discount' : 'Discount'} (${c.discount.pct}%)`, `-${moneyC(o.list - o.final)}`);
+      }
+      amt('Price accepted', moneyC(acc.price != null ? acc.price : o.final), true);
+
+      if (acc.price != null) {
+        section('Payment');
+        payRows(acc.price, T).forEach(([k, v]) => amt(k, moneyC2(v)));
+      }
+
+      section('Scope of work');
+      const sc = c.scope || [];
+      const half = Math.ceil(sc.length / 2);
+      const top = doc.y; let bottom = top;
+      [sc.slice(0, half), sc.slice(half)].forEach((col, k) => {
+        doc.y = top;
+        col.forEach((b) => { doc.font('Helvetica').fontSize(9.5).fillColor(ink).text(`\u2022  ${t(b)}`, L + 4 + k * (W / 2), doc.y, { width: W / 2 - 14 }); doc.moveDown(0.12); });
+        bottom = Math.max(bottom, doc.y);
+      });
+      doc.y = bottom;
+
+      section('Terms');
+      const terms = [];
+      if (T.timelineDays) terms.push(`The job is complete in up to ${T.timelineDays} days${c.jobType === 'repair' ? '' : ' from the start of demolition'}, weather permitting.`);
+      terms.push('Nothing outside this scope is done without a written change order signed by the homeowner, with the price stated first.');
+      if (c.jobType !== 'repair') terms.push(`Damaged wood beyond ${T.woodPct != null ? T.woodPct : 20}% of the deck is shown to the homeowner and priced in writing before it is replaced.`);
+      terms.push(`The quoted price holds for ${T.validityDays || 30} days from ${c.reportDate}.`);
+      terms.forEach((x) => { doc.font('Helvetica').fontSize(9.5).fillColor(ink).text(t(x), L, doc.y, { width: W }); doc.moveDown(0.15); });
+
+      section('Acceptance record');
+      doc.font('Helvetica').fontSize(10.5).fillColor(ink).text(t(`I agree to the scope of work, price and terms in report ${c.reportNo}.`), L, doc.y, { width: W });
+      doc.moveDown(0.25);
+      kv('Signed (typed name)', acc.name, true);
+      kv('Date and time', when);
+      kv('Confirmation ID', crypto.createHash('sha256').update(String(token)).digest('hex').slice(0, 10).toUpperCase());
+
+      doc.moveDown(0.3);
+      doc.font('Helvetica').fontSize(8.5).fillColor(gray).text(t(`Typed-name acceptance, recorded electronically. Keep this page with your copy of the full report.${reportUrl ? `\nFull report: ${reportUrl}` : ''}`), L, doc.y, { width: W, lineGap: 2 });
+      doc.end();
+    } catch (e) { reject(e); }
+  });
 }
 
 // Prices typed on their own ("20k / 25k / 30k", "20/25/30", "28000") are read by code, not guessed by the AI
@@ -891,7 +1155,8 @@ async function skipCurrent(s, to) {
   switch (s.awaiting) {
     case 'source': s.data.lead_source = 'retail'; break;
     case 'extras': s.extrasDone = true; break;
-    case 'claim': case 'area': case 'price': case 'stories': case 'leaks': case 'condition': s.skipped.add(s.awaiting); break;
+    case 'claim': case 'area': case 'stories': case 'leaks': case 'condition': s.skipped.add(s.awaiting); break;
+    case 'price': return sendText(to, tx(s, isRepair(s) ? 'needPriceRpr' : 'needPriceRep'));
     case 'addr': case 'type': return sendText(to, tx(s, 'needThis'));
     default: break;
   }
@@ -978,10 +1243,6 @@ async function onText(s, to, text, host, phone) {
   if (ex.intent === 'build' && !changed) return showConfirm(s, to);
 
   if (s.awaiting === 'extras') s.extrasDone = true;
-  if (s.awaiting === 'price') {
-    s.tries.price = (s.tries.price || 0) + 1;
-    if (!pricesComplete(s) && s.tries.price >= 3) s.skipped.add('price');
-  }
   return advance(s, to);
 }
 
@@ -1235,11 +1496,11 @@ async function showMyQuotes(s, to) {
   for (const q of Object.values(QUOTES)) {
     if (q.phone !== to || !q.no) continue;
     const cur = byNo[q.no];
-    byNo[q.no] = { ...(!cur || q.created > cur.created ? q : cur), accepted: Boolean((cur && cur.accepted) || q.accepted) };
+    byNo[q.no] = { ...(!cur || q.created > cur.created ? q : cur), accepted: q.accepted || (cur && cur.accepted) || null };
   }
   const mine = Object.values(byNo).sort((x, y) => y.created - x.created).slice(0, 5);
   if (!mine.length) return sendText(to, tx(s, 'myQuotesNone'));
-  const lines = mine.map((q) => `${q.no} · ${q.customer || '—'} · ${q.address || ''}${q.price != null ? ` · ${money(q.price)}` : ''} · ${q.accepted ? tx(s, 'qAccepted') : tx(s, 'qSent')}${q.url ? `\n${q.url}` : ''}`);
+  const lines = mine.map((q) => `${q.no} · ${q.customer || '—'} · ${q.address || ''}${q.price != null ? ` · ${money(q.price)}` : ''} · ${q.accepted ? tx(s, 'qAccepted') : tx(s, 'qSent')}${q.url ? `\n${q.url}` : ''}${q.accepted && q.accepted.confirmUrl ? `\n📄 ${q.accepted.confirmUrl}` : ''}`);
   return sendText(to, `${tx(s, 'myQuotesHead')}\n\n${lines.join('\n\n')}`);
 }
 
@@ -1357,6 +1618,10 @@ app.get('/', (req, res) => {
 });
 
 app.post('/', async (req, res) => {
+  if (!validSignature(req)) {
+    console.error('❌ Rejected a webhook call with a missing or invalid signature');
+    return res.status(401).end();
+  }
   res.status(200).send('EVENT_RECEIVED');
 
   // One delivery can carry several messages (for example 10 photos sent together). Handle every one, in order.
@@ -1369,6 +1634,7 @@ app.post('/', async (req, res) => {
 
 function handleIncoming(value, message, host) {
   const phone = message.from;
+  touchWindow(phone);
   const contact = (value.contacts || []).find((c) => c.wa_id === phone) || (value.contacts || [])[0];
   const name = contact?.profile?.name || 'Contractor';
   let s = getSession(phone, name);
@@ -1379,6 +1645,13 @@ function handleIncoming(value, message, host) {
     s = userSessions.get(phone) || s;
     s.host = host;
     try {
+      const waiting = takePending(phone);
+      if (waiting.length) {
+        const lines = waiting.map((p) => p.text || (p.doc ? `📄 ${p.doc.caption}` : '')).filter(Boolean);
+        if (await sendText(phone, `${tx(s, 'pendingHead')}\n\n${lines.join('\n\n')}`)) {
+          for (const p of waiting) if (p.doc) await sendDocument(phone, p.doc.url, p.doc.filename, p.doc.caption);
+        } else waiting.forEach((p) => queuePending(phone, p.text, p.doc));
+      }
       if (s.stage === 'new' && needsEnrollment(phone)) {
         if (message.type === 'text' && /^(hola|buenas|buenos|necesito|cotizaci)/i.test(message.text.body.trim())) s.lang = 'es';
         await startEnroll(s, phone);
@@ -1429,18 +1702,43 @@ const allowCors = (req, res, next) => {
 app.options('/accept', allowCors);
 app.post('/accept', allowCors, async (req, res) => {
   const b = req.body || {};
-  const q = QUOTES[String(b.token || '')];
+  const token = String(b.token || '');
+  const q = QUOTES[token];
   const name = String(b.name || '').trim().slice(0, 80);
   if (!q) return res.status(404).json({ ok: false });
   if (!b.agreed || name.length < 3) return res.status(400).json({ ok: false });
-  const again = Boolean(q.accepted);
-  if (!again) {
-    q.accepted = { name, option: String(b.option || '').slice(0, 40), price: toNum(b.price), when: new Date().toISOString() };
-    saveQuotes();
-    const price = q.accepted.price != null ? `: ${money(q.accepted.price)}` : '';
-    await sendText(q.phone, `✅ ${name} accepted Quote ${q.quoteNumber} for ${q.address}.\n${q.accepted.option}${price}\nSigned by typing their name on ${new Date().toLocaleString('en-GB')}.`);
+  if (q.accepted) return res.json({ ok: true, again: true, confirmationUrl: q.accepted.confirmUrl || '' });
+
+  // The price and option come from what was stored when the report was built, never from the customer's browser.
+  const opts = (q.confirm && q.confirm.options) || [];
+  const chosen = opts.find((o) => o.name === b.option) || (opts.length === 1 ? opts[0] : null);
+  if (opts.length && !chosen) return res.status(400).json({ ok: false });
+  q.accepted = {
+    name, option: chosen ? chosen.name : String(b.option || '').slice(0, 40), price: chosen ? chosen.final : toNum(b.price),
+    when: new Date().toISOString(), tz: String(b.tz || '').slice(0, 60), localTime: String(b.localTime || '').slice(0, 60)
+  };
+
+  let confirmUrl = '';
+  if (q.confirm) {
+    try {
+      const fileName = `Confirmation_${crypto.randomBytes(8).toString('hex')}.pdf`;
+      await writeConfirmationPdf(path.join(publicDir, fileName), q.confirm, q.accepted, q.url || '', token, chosen);
+      confirmUrl = `https://${req.get('host')}/files/${fileName}`;
+      q.accepted.confirmFile = fileName;
+      q.accepted.confirmUrl = confirmUrl;
+    } catch (e) { console.error('❌ Could not write the confirmation PDF:', e.message); }
   }
-  return res.json({ ok: true, again });
+  saveQuotes();
+
+  const price = q.accepted.price != null ? `: ${money(q.accepted.price)}` : '';
+  const lang = q.lang || 'en';
+  const no = q.no || q.quoteNumber;
+  const opt = `${q.accepted.option}${price}`;
+  const doc = confirmUrl ? { url: confirmUrl, filename: `Acceptance_${no}.pdf`, caption: tx({ lang }, 'confirmCaption', no, name) } : null;
+  notifyContractor(q.phone, tx({ lang }, 'acceptedMsg', name, no, q.address, opt, new Date().toLocaleString('en-GB')), { lang: q.lang, params: [name, no, q.address, opt] }, doc)
+    .then((how) => { q.accepted.notified = how; saveQuotes(); })
+    .catch((e) => console.error('❌ Could not notify the contractor:', e));
+  return res.json({ ok: true, again: false, confirmationUrl: confirmUrl });
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
