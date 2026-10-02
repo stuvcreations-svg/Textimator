@@ -132,7 +132,7 @@ const TXT = {
     qExtrasProfile: 'Any discount, or anything special for this job? Type it, or tap below.',
     qAdd: 'What should I add? Type it all in one message.',
     okay: '👍 No problem. Type "setup" any time.',
-    offerSetup: '💡 Want me to remember your usual shingles, warranties, payment terms and branding (phone, license, color)? It takes a minute.',
+    offerSetup: '💡 Want me to remember your usual shingles, warranties and branding (phone, license, color)? It takes a minute.',
     setupIntro: 'Quick setup, so I never ask these again. You can skip any question.',
     sCompany: "What's your company name?",
     sRep: 'What name should show on reports?',
@@ -247,7 +247,7 @@ const TXT = {
     qExtrasProfile: '¿Algún descuento o algo especial para este trabajo? Escríbelo, o toca abajo.',
     qAdd: '¿Qué debo agregar? Escríbelo todo en un mensaje.',
     okay: '👍 Sin problema. Escribe "setup" cuando quieras.',
-    offerSetup: '💡 ¿Quieres que recuerde tus tejas, garantías, forma de pago y marca habituales (teléfono, licencia, color)? Toma un minuto.',
+    offerSetup: '💡 ¿Quieres que recuerde tus tejas, garantías y marca habituales (teléfono, licencia, color)? Toma un minuto.',
     setupIntro: 'Configuración rápida, para no volver a preguntarte esto. Puedes omitir cualquier pregunta.',
     sCompany: '¿Cómo se llama tu empresa?',
     sRep: '¿Qué nombre debe aparecer en los informes?',
@@ -636,11 +636,26 @@ function parseState(t) {
   if (/^[a-z]{2}$/.test(x)) return Object.values(STATES).includes(x.toUpperCase()) ? x.toUpperCase() : '';
   return STATES[x] || '';
 }
+// The state a rule applies to is the PROPERTY's state, read from the address the contractor typed (a contractor can work in several states)
+function stateFromText(t) {
+  const x = String(t || '');
+  let m = x.match(/\b([A-Za-z]{2})\b[\s,]*\d{5}(?:-\d{4})?\b/);
+  if (m && Object.values(STATES).includes(m[1].toUpperCase())) return m[1].toUpperCase();
+  const low = x.toLowerCase();
+  for (const [name, code] of Object.entries(STATES)) if (new RegExp(`,\\s*${name}\\b`).test(low)) return code;
+  m = x.match(/,\s*([A-Za-z]{2})\s*$/);
+  if (m && Object.values(STATES).includes(m[1].toUpperCase())) return m[1].toUpperCase();
+  return '';
+}
+// The report date is the date where the job is (a quote made at 9 PM Pacific must not say tomorrow's date)
+const STATE_TZ = { AL: 'America/Chicago', AK: 'America/Anchorage', AZ: 'America/Phoenix', AR: 'America/Chicago', CA: 'America/Los_Angeles', CO: 'America/Denver', CT: 'America/New_York', DE: 'America/New_York', DC: 'America/New_York', FL: 'America/New_York', GA: 'America/New_York', HI: 'Pacific/Honolulu', ID: 'America/Denver', IL: 'America/Chicago', IN: 'America/New_York', IA: 'America/Chicago', KS: 'America/Chicago', KY: 'America/New_York', LA: 'America/Chicago', ME: 'America/New_York', MD: 'America/New_York', MA: 'America/New_York', MI: 'America/New_York', MN: 'America/Chicago', MS: 'America/Chicago', MO: 'America/Chicago', MT: 'America/Denver', NE: 'America/Chicago', NV: 'America/Los_Angeles', NH: 'America/New_York', NJ: 'America/New_York', NM: 'America/Denver', NY: 'America/New_York', NC: 'America/New_York', ND: 'America/Chicago', OH: 'America/New_York', OK: 'America/Chicago', OR: 'America/Los_Angeles', PA: 'America/New_York', RI: 'America/New_York', SC: 'America/New_York', SD: 'America/Chicago', TN: 'America/Chicago', TX: 'America/Chicago', UT: 'America/Denver', VT: 'America/New_York', VA: 'America/New_York', WA: 'America/Los_Angeles', WV: 'America/New_York', WI: 'America/Chicago', WY: 'America/Denver' };
+const fmtReportDate = (state) => new Date().toLocaleDateString('en-US', { timeZone: STATE_TZ[state] || 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' });
 const depositNoteFor = (state) => (state === 'CA' ? 'California caps a home-improvement down payment at $1,000 or 10% of the price, whichever is less.' : '');
 
 // The terms that apply to THIS quote: the contractor's saved terms, with anything typed for this quote on top.
-function effectiveTerms(s) {
+function effectiveTerms(s, metaState) {
   const T = { ...defaultTerms(), ...((s.profile && s.profile.terms) || {}) };
+  const state = stateFromText(s.data.customer_name_and_address) || parseState(metaState) || T.state || '';
   const D = s.data; const repair = isRepair(s);
   return {
     paymentMode: D.payment.mode || (repair ? 'on_completion' : T.paymentMode),
@@ -650,8 +665,8 @@ function effectiveTerms(s) {
     timelineDays: D.timeline_days != null ? D.timeline_days : (repair ? null : T.timelineDays),
     validityDays: T.validityDays,
     woodPct: D.wood_pct != null ? D.wood_pct : T.woodPct,
-    state: T.state || '',
-    depositNote: depositNoteFor(T.state)
+    state,
+    depositNote: depositNoteFor(state)
   };
 }
 function fmtTerms(s, T, repair) {
@@ -904,7 +919,7 @@ function applyIntake(d, s) {
   d.meta.companyAddress = P.companyAddress || '';
   d.meta.rep = P.rep || '';
   d.meta.reportNo = s.quoteNo || '';
-  d.meta.date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  d.meta.date = fmtReportDate(stateFromText(D.customer_name_and_address) || parseState(d.meta.state));
   d.meta.dateLabel = d.meta.dateLabel || 'Report date';
   d.meta.theme = themeOf(D.report_theme) || themeOf(REPORT_THEME) || 'day';
   d.meta.jobType = isRepair(s) ? 'repair' : 'replacement';
@@ -922,7 +937,7 @@ function applyIntake(d, s) {
   } catch (e) { logo = ''; }
   d.meta.brand = { phone: P.phone || '', whatsapp: P.phone || '', license: P.license || '', color: P.brandColor || '', logo, logoBg: P.logoBg || '#ffffff' };
   d.discount = D.discount && D.discount !== 'none' ? { pct: D.discount.pct, name: String(D.discount.name || 'customer').toLowerCase() } : null;
-  const ET = effectiveTerms(s);
+  const ET = effectiveTerms(s, d.meta.state);
   d.terms = { paymentMode: ET.paymentMode, deposit: ET.deposit, depositPct: ET.depositPct, stages: ET.stages, validityDays: ET.validityDays, timelineDays: ET.timelineDays, woodPct: ET.woodPct, state: ET.state, depositNote: ET.depositNote };
   if (isRepair(s)) {
     const src = D.repair.items || [];
@@ -1731,15 +1746,14 @@ async function startTerms(s, to, forced) {
   const cur = (s.profile && s.profile.terms) || null;
   s.termsDraft = { ...defaultTerms(), ...(cur || {}), stages: ((cur && cur.stages) || DEFAULT_STAGES).map((x) => [...x]) };
   s.termsForced = Boolean(forced);
-  s.termsChanging = false; // first the state (if unknown), then the summary with Keep / Change; Change asks every question
-  if (!cur || !s.termsDraft.state) return termsAsk(s, to, 'terms_state');
+  s.termsChanging = false; // the summary with Keep / Change; Change asks every question
   return termsSummary(s, to);
 }
 
 async function termsSummary(s, to) {
   s.awaiting = 'terms_confirm';
   const T = s.termsDraft;
-  return sendButtons(to, `${tx(s, 'termsIntro')}\n\n💳 ${fmtTerms(s, T, false)}${T.state ? `\n📍 ${T.state}` : ''}\n\n${tx(s, 'termsKeepAsk')}`, [{ id: 'terms:keep', title: btn(s, 'termsKeep') }, { id: 'terms:change', title: btn(s, 'termsChange') }]);
+  return sendButtons(to, `${tx(s, 'termsIntro')}\n\n💳 ${fmtTerms(s, T, false)}\n\n${tx(s, 'termsKeepAsk')}`, [{ id: 'terms:keep', title: btn(s, 'termsKeep') }, { id: 'terms:change', title: btn(s, 'termsChange') }]);
 }
 
 async function termsAsk(s, to, step) {
@@ -1761,7 +1775,7 @@ async function termsAsk(s, to, step) {
 async function termsAfter(s, to, step) {
   const T = s.termsDraft;
   if (step === 'terms_state' && !s.termsChanging) return termsSummary(s, to);
-  const order = ['terms_state', 'terms_mode', 'terms_deposit', 'terms_stages', 'terms_time', 'terms_valid', 'terms_wood'];
+  const order = ['terms_mode', 'terms_deposit', 'terms_stages', 'terms_time', 'terms_valid', 'terms_wood'];
   for (let i = order.indexOf(step) + 1; i < order.length; i++) {
     const nxt = order[i];
     if (T.paymentMode === 'on_completion' && (nxt === 'terms_deposit' || nxt === 'terms_stages')) continue;
@@ -1775,7 +1789,7 @@ async function termsButton(s, to, id) {
   const T = s.termsDraft; const a = s.awaiting;
   if (!T) return null;
   if (id === 'terms:keep' && a === 'terms_confirm') return finishTerms(s, to);
-  if (id === 'terms:change' && a === 'terms_confirm') { s.termsChanging = true; return termsAsk(s, to, 'terms_state'); }
+  if (id === 'terms:change' && a === 'terms_confirm') { s.termsChanging = true; return termsAsk(s, to, 'terms_mode'); }
   if ((id === 'tskip' || id === 'tkeep') && a === 'terms_state') return termsAfter(s, to, a);
   if (id === 'tkeep' && ['terms_stages', 'terms_time', 'terms_valid', 'terms_wood'].includes(a)) return termsAfter(s, to, a);
   if (id.startsWith('tmode:') && a === 'terms_mode') {
@@ -1790,7 +1804,7 @@ async function termsText(s, to, text) {
   if (!T) return null;
   if (a === 'terms_confirm') {
     if (/^(keep|yes|ok|okay|si|sí|good|dejarlos|bien)/.test(low)) return finishTerms(s, to);
-    if (/^(change|edit|no|cambiar)/.test(low)) { s.termsChanging = true; return termsAsk(s, to, 'terms_state'); }
+    if (/^(change|edit|no|cambiar)/.test(low)) { s.termsChanging = true; return termsAsk(s, to, 'terms_mode'); }
     return termsSummary(s, to);
   }
   if (a === 'terms_state') {
