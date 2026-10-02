@@ -91,7 +91,7 @@ const TXT = {
     ready: (url) => `✅ Your report is ready:\n${url}`,
     notes: 'Notes for you (not in the report):',
     hiccup: 'Sorry, I hit a snag. Please try that again.',
-    voice: "I can't listen to voice notes yet. Please type it.",
+    onlyThese: 'I can read typed messages, photos and PDF reports.',
     editHint: 'Tell me what to change, or tap New quote.',
     replacement: 'Replacement', repair: 'Repair', retail: 'Retail', insurance: 'Insurance',
     lblCustomer: '👤', lblJob: '🏠', lblPrices: '💵', lblDiscount: '🏷️', lblPhotos: '📸',
@@ -101,8 +101,6 @@ const TXT = {
     blankArea: 'roof area', blankPrices: 'prices', blankShingles: 'shingles', blankYears: 'workmanship warranty', blankMfr: 'manufacturer warranty',
     qExtrasProfile: 'Any discount, or anything special for this job? Type it, or tap below.',
     qAdd: 'What should I add? Type it all in one message.',
-    heard: (t) => `🎤 "${t}"`,
-    voiceFail: "I couldn't make that out. Please try again, or type it.",
     okay: '👍 No problem. Type "setup" any time.',
     offerSetup: '💡 Want me to remember your company and your usual shingles and warranties? It takes a minute.',
     setupIntro: 'Quick setup, so I never ask these again. You can skip any question.',
@@ -161,7 +159,7 @@ const TXT = {
     ready: (url) => `✅ Tu informe está listo:\n${url}`,
     notes: 'Notas para ti (no salen en el informe):',
     hiccup: 'Perdón, tuve un problema. Inténtalo de nuevo.',
-    voice: 'Todavía no puedo escuchar notas de voz. Escríbelo, por favor.',
+    onlyThese: 'Puedo leer mensajes escritos, fotos e informes en PDF.',
     editHint: 'Dime qué cambiar, o toca Nueva cotización.',
     replacement: 'Reemplazo', repair: 'Reparación', retail: 'Particular', insurance: 'Seguro',
     lblCustomer: '👤', lblJob: '🏠', lblPrices: '💵', lblDiscount: '🏷️', lblPhotos: '📸',
@@ -171,8 +169,6 @@ const TXT = {
     blankArea: 'área del techo', blankPrices: 'precios', blankShingles: 'tejas', blankYears: 'garantía de mano de obra', blankMfr: 'garantía del fabricante',
     qExtrasProfile: '¿Algún descuento o algo especial para este trabajo? Escríbelo, o toca abajo.',
     qAdd: '¿Qué debo agregar? Escríbelo todo en un mensaje.',
-    heard: (t) => `🎤 "${t}"`,
-    voiceFail: 'No pude entenderlo. Inténtalo de nuevo, o escríbelo.',
     okay: '👍 Sin problema. Escribe "setup" cuando quieras.',
     offerSetup: '💡 ¿Quieres que recuerde tu empresa y tus tejas y garantías habituales? Toma un minuto.',
     setupIntro: 'Configuración rápida, para no volver a preguntarte esto. Puedes omitir cualquier pregunta.',
@@ -1164,32 +1160,13 @@ async function finishSetup(s, to) {
   return null;
 }
 
-// ----- Voice notes: Gemini turns the audio into text, then it is handled like a typed message -----
+// ----- Downloading files the contractor sends (PDF measurement reports) -----
 async function fetchMedia(mediaId) {
   const res = await fetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } });
   const data = await res.json();
   if (!data.url) throw new Error('No media URL returned by Meta');
   const r = await fetch(data.url, { headers: { Authorization: `Bearer ${waToken}` } });
   return { buffer: Buffer.from(await r.arrayBuffer()), mime: data.mime_type || 'audio/ogg' };
-}
-
-async function transcribe(media) {
-  const data = await callGemini({
-    system: 'You transcribe a short voice note from a roofing contractor. Return ONLY JSON: {"text": "<verbatim transcript>"}. Keep the original language. If you cannot make out any speech, return {"text": ""}.',
-    parts: [{ inline_data: { mime_type: media.mime.split(';')[0], data: media.buffer.toString('base64') } }, { text: 'Transcribe this voice note.' }],
-    temperature: 0
-  });
-  const raw = geminiText(data);
-  if (!raw) return '';
-  try { return String(parseJsonText(raw).text || '').trim(); } catch (e) { return ''; }
-}
-
-async function onAudio(s, to, message, host, phone) {
-  let text = '';
-  try { text = await transcribe(await fetchMedia(message.audio.id)); } catch (err) { console.error('❌ Audio error:', err); }
-  if (!text) return sendText(to, tx(s, 'voiceFail'));
-  await sendText(to, tx(s, 'heard', text));
-  return onText(s, to, text, host, phone);
 }
 
 // =============================================================================
@@ -1202,13 +1179,19 @@ app.get('/', (req, res) => {
 
 app.post('/', async (req, res) => {
   res.status(200).send('EVENT_RECEIVED');
-  const value = req.body.entry?.[0]?.changes?.[0]?.value || req.body.value;
-  const message = value?.messages?.[0];
-  if (!message) return;
 
-  const phone = message.from;
-  const name = value?.contacts?.[0]?.profile?.name || 'Contractor';
+  // One delivery can carry several messages (for example 10 photos sent together). Handle every one, in order.
+  const values = [];
+  for (const entry of req.body.entry || []) for (const change of entry.changes || []) if (change.value) values.push(change.value);
+  if (req.body.value) values.push(req.body.value);
   const host = req.get('host');
+  for (const value of values) for (const message of value.messages || []) handleIncoming(value, message, host);
+});
+
+function handleIncoming(value, message, host) {
+  const phone = message.from;
+  const contact = (value.contacts || []).find((c) => c.wa_id === phone) || (value.contacts || [])[0];
+  const name = contact?.profile?.name || 'Contractor';
   let s = getSession(phone, name);
   s.host = host;
 
@@ -1232,17 +1215,19 @@ app.post('/', async (req, res) => {
         console.log(`📎 Document from ${name}`);
         await onDocument(s, phone, message);
       } else if (message.type === 'audio') {
-        console.log(`🎤 Voice note from ${name}`);
-        await onAudio(s, phone, message, host, phone);
+        // Voice notes are not supported. Say so once, and never again in this chat.
+        console.log(`ℹ️ Voice note from ${name} (not supported)`);
+        if (!s.audioNoted) { s.audioNoted = true; await sendText(phone, tx(s, 'onlyThese')); }
       } else {
-        await sendText(phone, tx(s, 'voice'));
+        // Reactions, stickers, album wrappers and other system messages: ignore quietly, but log what they were.
+        console.log(`ℹ️ Ignored message type "${message.type}"`, message.errors ? JSON.stringify(message.errors) : '');
       }
     } catch (err) {
       console.error('❌ Processing error:', err);
       await sendText(phone, tx(s, 'hiccup'));
     }
   }).catch((e) => console.error('❌ Queue error:', e));
-});
+}
 
 // The report's "Accept" button posts here. The contractor is told on WhatsApp right away.
 const allowCors = (req, res, next) => {
