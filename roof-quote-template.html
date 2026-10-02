@@ -23,7 +23,7 @@ h1,h2,h3,.p{font-family:Poppins,system-ui,sans-serif}
 .cover .sub{font:300 clamp(22px,4vw,32px) Poppins,sans-serif;color:var(--ink-mute,#b8bec1);margin:0}
 .cover .kick{color:var(--sig);margin-top:90px}
 .cover p.tag{color:var(--ink-soft,#c9cdcf);max-width:560px;margin:26px 0 60px}
-.cover img{display:block;width:100%;height:340px;object-fit:cover;-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
+.cover .bgimg{display:block;width:100%;height:340px;object-fit:cover;-webkit-mask-image:linear-gradient(transparent,#000 45%);mask-image:linear-gradient(transparent,#000 45%)}
 section{padding:64px 0}
 h2{font:400 40px/1.15 Poppins,sans-serif;margin:0 0 28px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:24px;margin-bottom:36px}
@@ -184,6 +184,12 @@ tr.gr td{background:var(--deep);color:#fff;font:600 12px Poppins,sans-serif;lett
 .brandrow .wm{display:inline-flex;align-items:center;gap:12px;padding-bottom:0}.brandrow .wm::after{display:none}
 .mono{display:inline-flex;width:38px;height:38px;border-radius:9px;background:var(--brand);color:#fff;align-items:center;justify-content:center;font:700 14px Poppins,sans-serif;letter-spacing:.02em;font-style:normal}
 .brandrow .wm>span{font:700 15px Poppins,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.brandrow{align-items:flex-start}
+.logoplate{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:9px 16px;max-width:min(270px,62%)}
+.brandrow .logo{display:block;max-height:42px;max-width:230px;width:auto;height:auto;object-fit:contain;-webkit-mask-image:none;mask-image:none}
+.brmeta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;font:600 12px/1.2 Poppins,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#98a1a5;text-align:right;padding-top:4px}
+.brmeta .lic{font:500 12px/1.2 Poppins,sans-serif;letter-spacing:.03em;text-transform:none;color:#7d868a}
+.meta .co2{display:block;font:400 13px/1.35 Poppins,sans-serif;color:#98a1a5;margin-top:3px;text-transform:none;letter-spacing:0}
 </style></head>
 <body><div id="app"></div>
 <!-- DATA BLOCK: the WhatsApp app replaces the JSON in this tag, or sets window.REPORT_DATA before load, or calls renderReport(data) / postMessage(data). -->
@@ -303,7 +309,7 @@ function render(d){
  const roofBit=M.roofBit?esc(M.roofBit):(M.pitch?`${esc(M.pitch)} pitch`:esc(M.roofDescriptor||''));
  const BR=M.brand||{};
  const ini=String(M.company||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.replace(/[^A-Za-z0-9]/g,'').charAt(0)).join('').toUpperCase()||'•';
- const brandrow=`<div class="brandrow">${BR.logo?`<img class="logo" src="${esc(BR.logo)}" alt="${co}">`:`<span class="wm"><i class="mono">${esc(ini)}</i><span>${co}</span></span>`}${BR.license?`<span class="lic">Lic. ${esc(BR.license)}</span>`:''}</div>`;
+ const brandrow=`<div class="brandrow">${BR.logo?`<span class="logoplate" style="background:${esc(BR.logoBg||'#ffffff')}${BR.logoBg==='transparent'?';padding:0':''}"><img class="logo" src="${esc(BR.logo)}" alt="${co}"></span>`:`<span class="wm"><i class="mono">${esc(ini)}</i><span>${co}</span></span>`}${(M.reportNo||BR.license)?`<span class="brmeta">${M.reportNo?`<span>Report ${esc(M.reportNo)}</span>`:''}${BR.license?`<span class="lic">Lic. ${esc(BR.license)}</span>`:''}</span>`:''}</div>`;
  const st=(b,s,sm)=>`<div><b>${b}</b><span>${s}</span><small>${sm}</small></div>`;
  const stats=MS?st(photos,'roof photographs','every problem shown')+st(AN,'sq ft of roof',esc(M.areaNote||M.measureSource||''))+st(esc(M.pitch||'—'),'predominant pitch',esc(M.pitchNote||((M.facets||'—')+' roof facets')))
    :st(photos,'roof photographs','every problem shown')+st(F.length,'findings','each with its fix')+st(AN,'sq ft of roof',esc(M.roofNote||''));
@@ -381,7 +387,7 @@ function render(d){
  const sRows=GRP.map(g=>`<tr class="gr"><td colspan="5">${esc(g.title).toUpperCase()}${g.areaSqFt?' · '+sqf(g.areaSqFt).toUpperCase():''}</td></tr>`+(g.items||[]).map(x=>`<tr><td>${++cn}</td><td>${esc(x.item)}</td><td>${esc(x.qty||'—')}</td><td>${esc(x.findings||'—')}</td><td class="pi">${esc(x.price||'Included')}</td></tr>`).join('')).join('');
  const scopeSec=(ONE&&GRP.length)?`<section><div class="w">${rh('Itemised')}<h2>Every line, itemised</h2><p>${esc(d.itemIntro||'Each line is tied to the finding that calls for it.')}</p><div class="tw"><table><tr><th>#</th><th>Item</th><th>Quantity</th><th>Findings</th><th>Price</th></tr>${sRows}${D?`<tr class="tot"><td></td><td>List price</td><td></td><td></td><td>${money(PR[0].L)}</td></tr><tr><td></td><td>${esc(cap(D.name))} discount (${esc(D.pct)}%)</td><td></td><td></td><td>${PR[0].disc==null?'$ —':'−'+money(PR[0].disc)}</td></tr>`:''}<tr class="tot"><td></td><td>${GRP.length>1?'Price, all areas':(D?'Your price':'Price')}</td><td></td><td></td><td>${money(PR[0].p)}</td></tr></table></div>${d.itemNote?`<p style="font-size:14px;color:var(--slate)"><i>${esc(d.itemNote)}</i></p>`:''}</div></section>`:itemSec;
  document.title=`Roof Condition Report · ${M.addressLine1||''}`;
- $('app').innerHTML=`<header class="dark cover ${coverSrc?'':'nophoto'}"><div class="w cw">${brandrow}<div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep)+', ':''}${co}</b></div>${M.reportNo?`<div class="lab">Report no.<b>${esc(M.reportNo)}</b></div>`:''}${M.claimNumber?`<div class="lab">Claim number<b>${esc(M.claimNumber)}</b></div>`:''}</div><div class="ct"><div class="lab kick">Roof condition report · ${esc(M.product||(REPAIR?'Roof repair':'Shingle roof replacement'))}${M.leadSource==='insurance'?' · Insurance claim':''}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div></div>${coverSrc?`<img class="bgimg" src="${esc(coverSrc)}" alt="">`:''}</header>
+ $('app').innerHTML=`<header class="dark cover ${coverSrc?'':'nophoto'}"><div class="w cw">${brandrow}<div class="meta p"><div class="lab">Prepared for<b>${esc(M.homeowner)}</b></div><div class="lab">${esc(M.dateLabel||'Report date')}<b>${esc(M.date)}</b></div><div class="lab">Roof area<b>${A}${roofBit?' · '+roofBit:''}</b></div><div class="lab">Prepared by<b>${M.rep?esc(M.rep):co}</b>${M.rep?`<span class="co2">${co}</span>`:''}</div>${M.claimNumber?`<div class="lab">Claim number<b>${esc(M.claimNumber)}</b></div>`:''}</div><div class="ct"><div class="lab kick">Roof condition report · ${esc(M.product||(REPAIR?'Roof repair':'Shingle roof replacement'))}${M.leadSource==='insurance'?' · Insurance claim':''}</div><h1>${A1}</h1><p class="sub">${A2}</p><p class="tag">Every problem found on the roof, photographed, with the work that fixes it.</p></div></div>${coverSrc?`<img class="bgimg" src="${esc(coverSrc)}" alt="">`:''}</header>
  <section><div class="w">${rh('At a glance')}<h2>At a glance</h2><div class="stats">${stats}</div>${meterBlock}<div class="call"><div class="lab" style="color:var(--sig)">The one thing to know</div><h3>${esc(V.headline)}</h3><p>${esc(V.paragraph)}</p></div>${glance}</div></section>
  ${hero}<section><div class="w">${rh('Findings')}${cards}</div></section>${rs}
  <section style="padding-top:0"><div class="w">${rh('Problems and solutions')}<h2>Problems and solutions</h2><p>Every problem found, what fixes it, in order of priority${BLD.length>1?', by building':''}.</p><div>${psNew}</div></div></section>${msPage}${sim}

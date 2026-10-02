@@ -823,7 +823,7 @@ function applyIntake(d, s) {
     const lf = P.logoFile && [path.join(LOGO_DIR, P.logoFile), path.join(publicDir, P.logoFile)].find((f) => fs.existsSync(f));
     if (lf) logo = `data:image/jpeg;base64,${fs.readFileSync(lf).toString('base64')}`;
   } catch (e) { logo = ''; }
-  d.meta.brand = { phone: P.phone || '', whatsapp: P.phone || '', license: P.license || '', color: P.brandColor || '', logo };
+  d.meta.brand = { phone: P.phone || '', whatsapp: P.phone || '', license: P.license || '', color: P.brandColor || '', logo, logoBg: P.logoBg || '#ffffff' };
   d.discount = D.discount && D.discount !== 'none' ? { pct: D.discount.pct, name: String(D.discount.name || 'customer').toLowerCase() } : null;
   d.terms = {
     paymentMode: D.payment.mode || (isRepair(s) ? 'on_completion' : 'standard'),
@@ -1295,7 +1295,7 @@ async function onImage(s, to, message) {
   if (s.stage === 'setup' && s.awaiting === 'setup_logo') {
     const logo = await downloadWhatsAppImage(message.image.id);
     const stored = logo ? saveLogo(to, logo) : null;
-    if (stored) s.draft.logoFile = stored;
+    if (stored) { s.draft.logoFile = stored; s.draft.logoBg = await detectLogoBg(stored); }
     return setupNext(s, to);
   }
   if (/measure|medici[oó]n|eagleview|quickmeasure|hover|roofr/i.test(message.image.caption || '')) return onMeasurement(s, to, { id: message.image.id, mime: 'image/jpeg' });
@@ -1493,6 +1493,35 @@ function needsRepName(phone) {
   return Boolean(p && p.company && !p.rep);
 }
 
+let canvasLib = null;
+function canvasMod() {
+  if (canvasLib === null) { try { canvasLib = require('@napi-rs/canvas'); } catch (e) { canvasLib = false; } }
+  return canvasLib;
+}
+const toHex = (rgb) => `#${rgb.map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('')}`;
+// Logos come in three kinds: solid background (use that exact color so the box disappears), transparent with dark artwork
+// (needs a white plate to be visible), transparent with light artwork (needs no plate).
+async function detectLogoBg(fileName) {
+  const C = canvasMod();
+  if (!C) return '#ffffff';
+  try {
+    const img = await C.loadImage(path.join(LOGO_DIR, fileName));
+    const w = 48; const h = Math.max(1, Math.round((48 * img.height) / img.width));
+    const cv = C.createCanvas(w, h); const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const px = ctx.getImageData(0, 0, w, h).data;
+    const at = (x, y) => { const i = (y * w + x) * 4; return [px[i], px[i + 1], px[i + 2], px[i + 3]]; };
+    const edge = [];
+    for (let x = 0; x < w; x++) edge.push(at(x, 0), at(x, h - 1));
+    for (let y = 0; y < h; y++) edge.push(at(0, y), at(w - 1, y));
+    const solid = edge.filter((p) => p[3] > 200);
+    if (solid.length >= edge.length * 0.6) return toHex([0, 1, 2].map((k) => Math.round(solid.reduce((t, p) => t + p[k], 0) / solid.length)));
+    let n = 0; let lum = 0;
+    for (let i = 0; i < px.length; i += 4) if (px[i + 3] > 128) { n++; lum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]; }
+    return n && lum / n > 150 ? 'transparent' : '#ffffff';
+  } catch (e) { return '#ffffff'; }
+}
+
 // The logo lives with the profile, not in the public folder
 function saveLogo(phone, publicFile) {
   try {
@@ -1564,7 +1593,7 @@ async function enrollButton(s, to, id) {
 
 async function enrollLogo(s, to, message) {
   const f = await downloadWhatsAppImage(message.image.id);
-  if (f) s.enroll.logoFile = saveLogo(to, f);
+  if (f) { s.enroll.logoFile = saveLogo(to, f); if (s.enroll.logoFile) s.enroll.logoBg = await detectLogoBg(s.enroll.logoFile); }
   return finishEnroll(s, to);
 }
 
@@ -1573,7 +1602,7 @@ async function finishEnroll(s, to) {
   const next = { ...(getProfile(to) || {}) };
   if (e.mode !== 'rep') {
     next.company = e.company;
-    if (e.logoFile) next.logoFile = e.logoFile; else delete next.logoFile;
+    if (e.logoFile) { next.logoFile = e.logoFile; next.logoBg = e.logoBg || '#ffffff'; } else { delete next.logoFile; delete next.logoBg; }
   }
   next.rep = e.rep;
   saveProfile(to, next);
