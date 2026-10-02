@@ -345,7 +345,35 @@ async function withRetry(fn, tries = 3) {
 }
 const GRAPH = () => `https://graph.facebook.com/v26.0/${waPhoneId}/messages`;
 
+// ----- Chat simulator (/sim): test the bot from a browser, with no WhatsApp. Only exists when SIM_PASSWORD is set. -----
+// Simulator "phones" always start with "sim-", so the bot can never message a real number through it.
+const SIM_PASSWORD = process.env.SIM_PASSWORD || '';
+const SIM_OUT = new Map(); const SIM_SEQ = new Map(); const SIM_MEDIA = new Map();
+const isSim = (phone) => /^sim-/.test(String(phone || ''));
+function simPush(to, body) {
+  const m = { id: (SIM_SEQ.get(to) || 0) + 1, at: Date.now() };
+  SIM_SEQ.set(to, m.id);
+  if (body.type === 'text') Object.assign(m, { kind: 'text', text: body.text.body });
+  else if (body.type === 'interactive') Object.assign(m, { kind: 'buttons', text: body.interactive.body.text, buttons: body.interactive.action.buttons.map((b) => ({ id: b.reply.id, title: b.reply.title })) });
+  else if (body.type === 'document') Object.assign(m, { kind: 'document', url: body.document.link, filename: body.document.filename, caption: body.document.caption || '' });
+  else Object.assign(m, { kind: 'text', text: `[${body.type} message]` });
+  SIM_OUT.set(to, [...(SIM_OUT.get(to) || []), m].slice(-500));
+}
+// A simulator photo is resized and saved as a JPEG, like WhatsApp does to a normal photo
+async function simToJpeg(buffer) {
+  const C = canvasMod();
+  if (!C) return buffer;
+  try {
+    const img = await C.loadImage(buffer);
+    const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const cv = C.createCanvas(Math.round(img.width * k), Math.round(img.height * k));
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    return cv.toBuffer('image/jpeg', 85);
+  } catch (e) { return buffer; }
+}
+
 async function waPost(body, label) {
+  if (isSim(body.to)) { simPush(body.to, body); return true; }
   try {
     const res = await timedFetch(GRAPH(), {
       method: 'POST',
@@ -453,6 +481,13 @@ const sendDocument = (to, fileUrl, fileName, caption) =>
   waPost({ to, type: 'document', document: { link: fileUrl, filename: fileName, caption } }, 'document');
 
 async function downloadWhatsAppImage(mediaId) {
+  if (String(mediaId).startsWith('sim:')) {
+    const m = SIM_MEDIA.get(mediaId);
+    if (!m) return null;
+    const fileName = `img_${String(mediaId).replace(/\W/g, '')}.jpg`;
+    fs.writeFileSync(path.join(publicDir, fileName), await simToJpeg(m.buffer));
+    return fileName;
+  }
   try {
     // Meta's media link is sometimes not ready the first time, so this is retried. A real image is required:
     // an error page saved as a "photo" would be counted and then break the report.
@@ -1966,6 +2001,11 @@ async function finishSetup(s, to) {
 
 // ----- Downloading files the contractor sends (PDF measurement reports) -----
 async function fetchMedia(mediaId) {
+  if (String(mediaId).startsWith('sim:')) {
+    const m = SIM_MEDIA.get(mediaId);
+    if (!m) throw new Error('Unknown simulator file');
+    return { buffer: m.buffer, mime: m.mime };
+  }
   return withRetry(async () => {
     const res = await timedFetch(`https://graph.facebook.com/v26.0/${mediaId}`, { headers: { Authorization: `Bearer ${waToken}` } }, MEDIA_TIMEOUT_MS);
     const data = await res.json();
@@ -2148,5 +2188,60 @@ app.post('/accept', allowCors, async (req, res) => {
     .catch((e) => console.error('❌ Could not notify the contractor:', e));
   return res.json({ ok: true, again: false, confirmationUrl: confirmUrl });
 });
+
+if (SIM_PASSWORD) {
+  const simAuth = (req, res, next) => {
+    const key = String(req.get('x-sim-key') || '');
+    const ok = key.length === SIM_PASSWORD.length && crypto.timingSafeEqual(Buffer.from(key), Buffer.from(SIM_PASSWORD));
+    return ok ? next() : res.status(401).json({ ok: false });
+  };
+  const simPhone = (v) => (/^sim-[a-z0-9]{3,24}$/.test(String(v || '')) ? String(v) : '');
+
+  app.get('/sim', (req, res) => {
+    try { res.type('html').send(fs.readFileSync(path.join(__dirname, 'sim.html'), 'utf8')); } catch (e) { res.status(404).send('sim.html is missing. Upload it next to app.js.'); }
+  });
+  app.get('/sim/ping', simAuth, (req, res) => res.json({ ok: true }));
+
+  // A photo or PDF chosen in the simulator: kept in memory, then "sent" like a WhatsApp media message
+  app.post('/sim/upload', simAuth, express.raw({ type: '*/*', limit: '30mb' }), (req, res) => {
+    if (!simPhone(req.query.phone) || !Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ ok: false });
+    const id = `sim:${crypto.randomBytes(6).toString('hex')}`;
+    SIM_MEDIA.set(id, { buffer: req.body, mime: String(req.query.mime || 'application/octet-stream').slice(0, 80) });
+    if (SIM_MEDIA.size > 80) SIM_MEDIA.delete(SIM_MEDIA.keys().next().value);
+    return res.json({ ok: true, id });
+  });
+
+  app.post('/sim/send', simAuth, (req, res) => {
+    const b = req.body || {};
+    const phone = simPhone(b.phone);
+    if (!phone) return res.status(400).json({ ok: false });
+    const name = String(b.name || 'Test Contractor').slice(0, 40);
+    let message;
+    if (b.type === 'text') message = { type: 'text', text: { body: String(b.text || '').slice(0, 2000) } };
+    else if (b.type === 'button') message = { type: 'interactive', interactive: { button_reply: { id: String(b.id || ''), title: String(b.title || '') } } };
+    else if (b.type === 'image') message = { type: 'image', image: { id: String(b.id || ''), caption: String(b.caption || '') } };
+    else if (b.type === 'document') message = { type: 'document', document: { id: String(b.id || ''), mime_type: String(b.mime || ''), filename: String(b.filename || 'report.pdf') } };
+    else return res.status(400).json({ ok: false });
+    handleIncoming({ contacts: [{ wa_id: phone, profile: { name } }], messages: [] }, { from: phone, ...message }, req.get('host'));
+    return res.json({ ok: true });
+  });
+
+  app.get('/sim/poll', simAuth, (req, res) => {
+    const phone = simPhone(req.query.phone);
+    if (!phone) return res.status(400).json({ ok: false });
+    const after = Number(req.query.after) || 0;
+    return res.json({ ok: true, messages: (SIM_OUT.get(phone) || []).filter((m) => m.id > after) });
+  });
+
+  // Start this test contractor over: forget the chat, the saved profile and the window
+  app.post('/sim/reset', simAuth, (req, res) => {
+    const phone = simPhone((req.body || {}).phone);
+    if (!phone) return res.status(400).json({ ok: false });
+    userSessions.delete(phone); SIM_OUT.delete(phone); SIM_SEQ.delete(phone); delete WINDOWS[phone];
+    if (PROFILES[phone]) { delete PROFILES[phone]; try { fs.writeFileSync(PROFILE_FILE, JSON.stringify(PROFILES, null, 2)); } catch (e) { /* the in-memory copy is what matters */ } }
+    return res.json({ ok: true });
+  });
+  console.log('🧪 Chat simulator is ON at /sim (password set).');
+}
 
 app.listen(port, () => console.log(`Server running on port ${port}`));

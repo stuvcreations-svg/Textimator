@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Textimator simulator</title>
+<style>
+:root{--bg:#efeae2;--bot:#fff;--me:#d9fdd3;--ink:#111b21;--mute:#667781;--line:#d1d7db;--green:#008069;--chip:#fff;--panel:#f0f2f5}
+@media (prefers-color-scheme:dark){:root{--bg:#0b141a;--bot:#202c33;--me:#005c4b;--ink:#e9edef;--mute:#8696a0;--line:#2a3942;--green:#00a884;--chip:#202c33;--panel:#111b21}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--panel)}
+.app{display:grid;grid-template-columns:minmax(340px,440px) 1fr;height:100vh;height:100dvh}
+.chatcol{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;border-right:1px solid var(--line);background:var(--bg);min-width:0}
+.top{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.top b{font-size:16px}.top .id{color:var(--mute);font-size:12px}
+.top button,.top input{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--chip);color:var(--ink)}
+.top button{cursor:pointer}.top input{width:130px}
+.note{margin:10px 12px 0;padding:8px 10px;border-radius:8px;background:rgba(255,200,0,.18);font-size:12.5px;color:var(--ink)}
+#msgs{flex:1;min-height:0;overflow-y:auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:6px}
+.b{max-width:84%;padding:7px 10px;border-radius:10px;box-shadow:0 1px 1px rgba(0,0,0,.12);word-wrap:break-word;overflow-wrap:anywhere}
+.b.bot{align-self:flex-start;background:var(--bot);border-top-left-radius:2px}
+.b.me{align-self:flex-end;background:var(--me);border-top-right-radius:2px}
+.b a{color:var(--green)}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--green);font:inherit;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;text-align:center}
+.chip:disabled{opacity:.45;cursor:default}
+.doc{display:flex;gap:10px;align-items:center;padding:6px 2px}
+.doc .ic{width:38px;height:44px;border-radius:6px;background:#d8dee2;color:#445;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.doc small{color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(3,64px);gap:4px}
+.grid img{width:64px;height:64px;object-fit:cover;border-radius:6px}
+.typing{align-self:flex-start;color:var(--mute);font-size:13px;padding:2px 6px}
+.bar{display:flex;gap:6px;padding:8px;background:var(--panel);border-top:1px solid var(--line);align-items:center}
+.bar input[type=text]{flex:1;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:20px;background:var(--chip);color:var(--ink);min-width:0}
+.bar button{font:inherit;border:0;border-radius:50%;width:40px;height:40px;cursor:pointer;background:var(--chip);color:var(--ink);border:1px solid var(--line)}
+.bar button.send{background:var(--green);color:#fff;border:0}
+.prevcol{display:flex;flex-direction:column;height:100%;min-height:0;min-width:0}
+.prevcol .ph{padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.prevcol .ph a{color:var(--green);font-size:13px}
+.prevcol iframe{flex:1;border:0;background:#fff;width:100%}
+.empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--mute);padding:30px;text-align:center}
+#login{position:fixed;inset:0;background:var(--panel);display:flex;align-items:center;justify-content:center;z-index:9}
+#login form{background:var(--bot);padding:26px;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,.18);width:min(340px,92vw)}
+#login h2{margin:0 0 4px}#login p{color:var(--mute);margin:0 0 14px;font-size:13.5px}
+#login input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--chip);color:var(--ink)}
+#login button{margin-top:12px;width:100%;font:inherit;font-weight:700;padding:10px;border:0;border-radius:8px;background:var(--green);color:#fff;cursor:pointer}
+#err{color:#d33;font-size:13px;min-height:18px;margin-top:8px}
+.tabs{display:none}
+@media (max-width:820px){
+ .app{grid-template-columns:1fr}.prevcol{display:none}.app.showprev .chatcol{display:none}.app.showprev .prevcol{display:flex}
+ .tabs{display:flex;position:fixed;right:10px;bottom:70px;z-index:5}.tabs button{border:0;background:var(--green);color:#fff;border-radius:20px;padding:8px 14px;font:inherit;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+}
+</style></head>
+<body>
+<div id="login"><form id="lf"><h2>Textimator simulator</h2><p>Test the bot from your browser, with no WhatsApp. Enter the simulator password.</p><input id="pw" type="password" placeholder="Password" autocomplete="current-password" autofocus><button>Open</button><div id="err"></div></form></div>
+<div class="app" id="app">
+ <div class="chatcol">
+  <div class="top"><b>Simulator</b><span class="id" id="pid"></span><input id="nm" title="The name WhatsApp would show for this contractor" placeholder="WhatsApp name"><button id="newc" title="A brand-new contractor, like a first-time user">New contractor</button><button id="rst" title="Forget this contractor's chat and saved profile">Reset</button></div>
+  <div class="note">Real bot logic and your real Gemini key (each report costs a few cents). Nothing here is sent to real phones. Photos are resized like WhatsApp does.</div>
+  <div id="msgs"></div>
+  <div class="bar"><button id="pho" title="Send photos (pick several at once)">📷</button><button id="pdf" title="Send a measurement report PDF">📎</button><input type="text" id="tx" placeholder="Type a message" autocomplete="off"><button class="send" id="go" title="Send">➤</button></div>
+  <input type="file" id="fi" accept="image/*" multiple hidden><input type="file" id="fp" accept="application/pdf" hidden>
+ </div>
+ <div class="prevcol"><div class="ph"><b>Report preview</b><a id="plink" href="#" target="_blank" rel="noopener" hidden>Open in a new tab ↗</a></div><div class="empty" id="pe">The report appears here when the bot builds it. You can accept it as the customer right in this panel.</div><iframe id="pf" hidden title="Report preview"></iframe></div>
+</div>
+<div class="tabs"><button id="tg">Report</button></div>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const S={key:sessionStorage.getItem('simkey')||'',phone:localStorage.getItem('simphone')||'',name:localStorage.getItem('simname')||'Test Contractor',last:0,waiting:false,got:false,idle:0,since:0};
+const rnd=()=>'sim-'+Math.random().toString(36).slice(2,8);
+if(!S.phone){S.phone=rnd();localStorage.setItem('simphone',S.phone)}
+$('#nm').value=S.name;$('#pid').textContent=S.phone;
+const H=(j)=>Object.assign({'x-sim-key':S.key},j?{'content-type':'application/json'}:{});
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const link=t=>esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
+const msgs=$('#msgs');
+const scroll=()=>{msgs.scrollTop=msgs.scrollHeight};
+function typing(on){let t=$('#typing');if(on&&!t){t=document.createElement('div');t.id='typing';t.className='typing';t.textContent='Bot is working…';msgs.appendChild(t);scroll()}else if(!on&&t)t.remove()}
+function bubble(cls,html){typing(false);const d=document.createElement('div');d.className='b '+cls;d.innerHTML=html;msgs.appendChild(d);if(S.waiting)typing(true);scroll();return d}
+function showReport(text){const m=String(text).match(/\/files\/Roof_Quote_[a-f0-9]+\.html/);if(!m)return;const u=location.origin+m[0];$('#pf').src=u;$('#pf').hidden=false;$('#pe').hidden=true;$('#plink').href=u;$('#plink').hidden=false}
+function addBot(m){
+  S.got=true;S.idle=0;
+  if(m.kind==='text'){bubble('bot',link(m.text));showReport(m.text)}
+  else if(m.kind==='buttons'){
+    const d=bubble('bot',link(m.text)+'<div class="chips"></div>');const box=d.querySelector('.chips');showReport(m.text);
+    m.buttons.forEach(b=>{const c=document.createElement('button');c.className='chip';c.textContent=b.title;c.onclick=()=>{[...box.children].forEach(x=>x.disabled=true);me(esc(b.title));send({type:'button',id:b.id,title:b.title})};box.appendChild(c)});
+  } else if(m.kind==='document'){
+    const pdf=/\.pdf$/i.test(m.filename||'');
+    bubble('bot','<div class="doc"><div class="ic">'+(pdf?'PDF':'HTML')+'</div><div><a href="'+esc(m.url)+'" target="_blank" rel="noopener">'+esc(m.filename||'file')+'</a><br><small>'+esc(m.caption||'')+'</small></div></div>');
+  }
+  if(m.id>S.last)S.last=m.id;
+}
+function me(html){return bubble('me',html)}
+async function send(msg){
+  S.waiting=true;S.got=false;S.idle=0;S.since=Date.now();typing(true);
+  try{await fetch('/sim/send',{method:'POST',headers:H(1),body:JSON.stringify(Object.assign({phone:S.phone,name:S.name},msg))})}catch(e){bubble('bot','⚠️ Could not reach the server.');S.waiting=false;typing(false)}
+}
+async function poll(){
+  if(!S.key)return;
+  try{
+    const r=await fetch('/sim/poll?phone='+encodeURIComponent(S.phone)+'&after='+S.last,{headers:H()});
+    if(r.status===401){logout();return}
+    const j=await r.json();
+    (j.messages||[]).forEach(addBot);
+    if(S.waiting){
+      if(!(j.messages||[]).length&&S.got){S.idle++;if(S.idle>=4){S.waiting=false;typing(false)}}
+      if(Date.now()-S.since>150000){S.waiting=false;typing(false)}
+    }
+  }catch(e){}
+}
+setInterval(poll,800);
+function clearChat(){msgs.innerHTML='';S.last=0;S.waiting=false;$('#pf').hidden=true;$('#pf').removeAttribute('src');$('#pe').hidden=false;$('#plink').hidden=true}
+function logout(){S.key='';sessionStorage.removeItem('simkey');$('#login').style.display='flex'}
+$('#lf').onsubmit=async e=>{e.preventDefault();const pw=$('#pw').value;try{const r=await fetch('/sim/ping',{headers:{'x-sim-key':pw}});if(!r.ok)throw 0;S.key=pw;sessionStorage.setItem('simkey',pw);$('#login').style.display='none';$('#tx').focus()}catch(x){$('#err').textContent='Wrong password.'}};
+if(S.key){fetch('/sim/ping',{headers:H()}).then(r=>{if(r.ok)$('#login').style.display='none';else logout()}).catch(()=>{})}
+$('#nm').onchange=()=>{S.name=$('#nm').value.trim()||'Test Contractor';localStorage.setItem('simname',S.name)};
+$('#newc').onclick=()=>{if(!confirm('Start as a brand-new contractor? (A new test phone number; the old chat stays on the server.)'))return;S.phone=rnd();localStorage.setItem('simphone',S.phone);$('#pid').textContent=S.phone;clearChat()};
+$('#rst').onclick=async()=>{if(!confirm('Reset this test contractor? Their chat and saved profile are forgotten.'))return;await fetch('/sim/reset',{method:'POST',headers:H(1),body:JSON.stringify({phone:S.phone})});clearChat()};
+const sendText=()=>{const t=$('#tx').value.trim();if(!t)return;$('#tx').value='';me(esc(t));send({type:'text',text:t})};
+$('#go').onclick=sendText;$('#tx').onkeydown=e=>{if(e.key==='Enter')sendText()};
+async function upload(file){const r=await fetch('/sim/upload?phone='+encodeURIComponent(S.phone)+'&mime='+encodeURIComponent(file.type||'application/octet-stream'),{method:'POST',headers:{'x-sim-key':S.key,'content-type':file.type||'application/octet-stream'},body:file});const j=await r.json();if(!j.ok)throw new Error('upload');return j.id}
+$('#pho').onclick=()=>$('#fi').click();
+$('#fi').onchange=async e=>{
+  const files=[...e.target.files];e.target.value='';if(!files.length)return;
+  me('<div class="grid">'+files.slice(0,9).map(f=>'<img src="'+URL.createObjectURL(f)+'">').join('')+'</div>'+(files.length>1?'<div style="font-size:12px;opacity:.8;margin-top:4px">'+files.length+' photos</div>':''));
+  S.waiting=true;S.got=false;S.idle=0;S.since=Date.now();typing(true);
+  try{const ids=await Promise.all(files.map(upload));await Promise.all(ids.map(id=>fetch('/sim/send',{method:'POST',headers:H(1),body:JSON.stringify({phone:S.phone,name:S.name,type:'image',id})})))}catch(x){bubble('bot','⚠️ A photo could not be uploaded.');S.waiting=false;typing(false)}
+};
+$('#pdf').onclick=()=>$('#fp').click();
+$('#fp').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;me('📎 '+esc(f.name));S.waiting=true;S.got=false;S.idle=0;S.since=Date.now();typing(true);try{const id=await upload(f);await fetch('/sim/send',{method:'POST',headers:H(1),body:JSON.stringify({phone:S.phone,name:S.name,type:'document',id,mime:'application/pdf',filename:f.name})})}catch(x){bubble('bot','⚠️ The file could not be uploaded.');S.waiting=false;typing(false)}};
+$('#tg').onclick=()=>{const a=$('#app');a.classList.toggle('showprev');$('#tg').textContent=a.classList.contains('showprev')?'Chat':'Report'};
+})();
+</script>
+</body></html>
