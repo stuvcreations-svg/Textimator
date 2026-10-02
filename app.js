@@ -31,6 +31,8 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const COMPANY_NAME = process.env.COMPANY_NAME || '';
 const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || '';
 const REP_NAME = process.env.REP_NAME || '';
+// Better = Good + this %, and Best = Better + this %. The contractor only ever enters the Good price.
+const TIER_STEP_PCT = Number(process.env.TIER_STEP_PCT || 10);
 const PHOTO_WAIT_MS = Number(process.env.PHOTO_WAIT_MS || 6000); // wait for the last photo before replying
 
 // Default look: auto (customer's device), day, dark or blush. The customer can still switch on the page.
@@ -77,7 +79,8 @@ const TXT = {
     qSource: 'Is this a retail or an insurance job?',
     qClaim: "What's the claim number?",
     qArea: 'About how many sq ft is the roof? Or send the measurement report (PDF).',
-    qPriceRep: "What's the price for the Good, Better and Best? Like: 20k / 25k / 30k (one or two is fine)",
+    qPriceRep: (pct) => `What's the price for the Good option? I'll add ${pct}% for Better, and another ${pct}% for Best.`,
+    formulaNote: (pct) => `Better = Good + ${pct}%, Best = Better + ${pct}%`,
     qPriceRpr: 'What are the repairs and their prices? Like: flashing $300, 12 shingles $650. Or one total.',
     qExtras: 'Anything else? (shingles, warranties, discount, timeline, payment terms) Type it all in one message, or tap below.',
     qChange: 'Sure, what should I change? Just type it.',
@@ -145,7 +148,8 @@ const TXT = {
     qSource: '¿Es un trabajo particular o de seguro?',
     qClaim: '¿Cuál es el número de reclamo?',
     qArea: '¿Cuántos pies cuadrados tiene el techo, más o menos? O envía el informe de medición (PDF).',
-    qPriceRep: '¿Cuál es el precio para Bueno, Mejor y Óptimo? Ej.: 20k / 25k / 30k (con uno o dos basta)',
+    qPriceRep: (pct) => `¿Cuál es el precio de la opción Bueno? Sumaré ${pct}% para Mejor, y otro ${pct}% para Óptimo.`,
+    formulaNote: (pct) => `Mejor = Bueno + ${pct}%, Óptimo = Mejor + ${pct}%`,
     qPriceRpr: '¿Qué reparaciones harás y cuánto cuesta cada una? Ej.: flashing $300, 12 tejas $650. O un total.',
     qExtras: '¿Algo más? (tejas, garantías, descuento, plazo, forma de pago) Escríbelo todo en un mensaje, o toca abajo.',
     qChange: 'Claro, ¿qué cambio? Escríbelo.',
@@ -441,14 +445,20 @@ function newSession(name, lang, profile) {
 }
 
 const isRepair = (s) => s.data.job_type === 'repair';
-const tierPrices = (s) => ['good', 'better', 'best'].map((k) => s.data.tiers[k].price);
+// Prices the contractor typed are kept as they are; the rest follow the formula (rounded to whole dollars).
+function tierPrices(s) {
+  const t = s.data.tiers;
+  const step = 1 + TIER_STEP_PCT / 100;
+  const good = t.good.price != null ? t.good.price : null;
+  const better = t.better.price != null ? t.better.price : (good != null ? Math.round(good * step) : null);
+  const best = t.best.price != null ? t.best.price : (better != null ? Math.round(better * step) : null);
+  return [good, better, best];
+}
+const priceByFormula = (s) => s.data.tiers.good.price != null && (s.data.tiers.better.price == null || s.data.tiers.best.price == null);
 const pricesComplete = (s) => (isRepair(s)
   ? Boolean((s.data.repair.items && s.data.repair.items.length) || s.data.repair.total_price != null)
   : tierPrices(s).some((p) => p != null));
-const activeTierKeys = (s) => {
-  const keys = ['good', 'better', 'best'].filter((k) => s.data.tiers[k].price != null);
-  return keys.length ? keys : ['good'];
-};
+const activeTierKeys = (s) => (tierPrices(s).some((p) => p != null) ? ['good', 'better', 'best'] : ['good']);
 
 // =============================================================================
 // 5. THE QUESTIONS, IN ORDER
@@ -476,7 +486,7 @@ function blanks(s) {
   if (!pricesComplete(s)) out.push(tx(s, 'blankPrices'));
   if (!d.condition) out.push(tx(s, 'blankCondition'));
   if (!isRepair(s)) {
-    const ts = ['good', 'better', 'best'].map((k) => d.tiers[k]).filter((t) => t.price != null);
+    const ts = activeTierKeys(s).map((k) => d.tiers[k]);
     if (ts.some((t) => !t.shingle)) out.push(tx(s, 'blankShingles'));
     if (ts.some((t) => t.labor_years == null)) out.push(tx(s, 'blankYears'));
     if (ts.some((t) => !t.mfr_warranty)) out.push(tx(s, 'blankMfr'));
@@ -521,6 +531,7 @@ function summary(s) {
     if (r.total_price != null) lines.push(`${tx(s, 'lblPrices')} Total ${money(r.total_price)}`);
   } else if (tierPrices(s).some((p) => p != null)) {
     lines.push(`${tx(s, 'lblPrices')} ` + tx(s, 'tierWords').map((w, i) => (tierPrices(s)[i] != null ? `${w} ${money(tierPrices(s)[i])}` : null)).filter(Boolean).join(' · '));
+    if (priceByFormula(s)) lines.push(`    ${tx(s, 'formulaNote', TIER_STEP_PCT)}`);
   }
   if (d.discount && d.discount !== 'none') lines.push(`${tx(s, 'lblDiscount')} ${d.discount.pct}% ${d.discount.name || ''}`.trim());
   extraLines(s).forEach((l) => lines.push(l));
@@ -549,7 +560,7 @@ async function advance(s, to) {
     case 'leaks': return sendButtons(to, tx(s, 'qLeaks'), [{ id: 'lk:yes', title: btn(s, 'yes') }, { id: 'lk:no', title: btn(s, 'no') }, { id: 'lk:unknown', title: btn(s, 'unsure') }]);
     case 'condition': return sendButtons(to, tx(s, 'qCondition'), [{ id: 'cd:serviceable', title: btn(s, 'serviceable') }, { id: 'cd:monitor', title: btn(s, 'monitor') }, { id: 'cd:end_of_life', title: btn(s, 'endOfLife') }]);
     case 'price':
-      return sendButtons(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep'), [skipBtn]);
+      return sendButtons(to, isRepair(s) ? tx(s, 'qPriceRpr') : tx(s, 'qPriceRep', TIER_STEP_PCT), [skipBtn]);
     case 'extras': {
       const known = s.profile && s.profile.tiers && s.profile.tiers.good && s.profile.tiers.good.shingle;
       return sendButtons(to, tx(s, known ? 'qExtrasProfile' : 'qExtras'), [{ id: 'extras:none', title: btn(s, 'nothing') }]);
@@ -651,7 +662,7 @@ function applyIntake(d, s) {
       const t = D.tiers[k];
       return {
         name: k.charAt(0).toUpperCase() + k.slice(1),
-        shingle: t.shingle || null, listPrice: t.price != null ? t.price : null, laborYears: t.labor_years != null ? t.labor_years : null,
+        shingle: t.shingle || null, listPrice: tierPrices(s)[['good', 'better', 'best'].indexOf(k)], laborYears: t.labor_years != null ? t.labor_years : null,
         mfrWarranty: t.mfr_warranty ? `${makerOf(t.shingle) ? makerOf(t.shingle) + ' ' : ''}${String(t.mfr_warranty).toLowerCase().replace(/ ?manufacturer warranty| ?warranty/g, '')} manufacturer warranty` : null,
         mfrShort: t.mfr_warranty ? mfrShort(t.mfr_warranty) : null
       };
@@ -871,6 +882,11 @@ async function onText(s, to, text, host, phone) {
   if (ex.language === 'es' || ex.language === 'en') { if (text.trim().split(/\s+/).length >= 2) s.lang = ex.language; }
   if (ex.intent === 'new_quote') return startOver(s, to, phone);
   const changed = merge(s.data, ex.updates);
+  const tu = ex.updates.tiers || {};
+  if (tu.good && tu.good.price != null) {
+    if (!(tu.better && tu.better.price != null)) delete s.data.tiers.better.price;
+    if (!(tu.best && tu.best.price != null)) delete s.data.tiers.best.price;
+  }
   if (s.awaiting === 'addr' && !s.data.customer_name_and_address && text.trim().length >= 6) s.data.customer_name_and_address = text.trim();
 
   if (s.stage === 'done') {
